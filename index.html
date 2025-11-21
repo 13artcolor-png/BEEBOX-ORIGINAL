@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BEEBOX LAON - Gestion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+    </script>
+    <!-- Firebase -->
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "jspdf": "https://esm.sh/jspdf@2.5.1",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@3.8.2",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.5.136"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 font-sans text-slate-800">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

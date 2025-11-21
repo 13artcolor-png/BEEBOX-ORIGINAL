@@ -1,0 +1,174 @@
+export enum UserRole {
+  Admin = 'admin',
+  Agent = 'agent',
+}
+
+export enum BoxStatus {
+  Vacant = 'vacant',
+  Occupied = 'occupied',
+}
+
+export enum BoxSide {
+  Cour = 'Cour',
+  Rue = 'Rue',
+}
+
+export enum BoxLevel {
+  RDC = 'RDC',
+  Niveau1 = 'Niveau 1',
+}
+
+export enum OpeningType {
+  Porte = 'Porte',
+  Volet = 'Volet',
+  Garage = 'Garage',
+}
+
+export enum IdType {
+  CarteIdentite = "Carte d'identité",
+  PermisConduire = 'Permis de conduire',
+  Passeport = 'Passeport',
+  Autre = 'Autre',
+}
+
+export enum PaymentStatus {
+  Paid = 'Payé',
+  Due = 'À échéance',
+  Overdue = 'En retard',
+}
+
+export interface AdminUser {
+  // FIX: Add optional 'id' property to satisfy the generic constraint of fetchData.
+  id?: string;
+  name: string;
+  username: string;
+  email: string;
+  secondaryEmail?: string;
+  password?: string; // For changing password in admin profile
+}
+
+export interface WorkHistoryItem {
+  description: string;
+  completedDate: string;
+}
+
+export interface Box {
+  id: string;
+  size: string;
+  price: number;
+  status: BoxStatus;
+  side: BoxSide;
+  level: BoxLevel;
+  opening: OpeningType;
+  currentTenantId?: string | null;
+  tenantHistory: string[];
+  rentedByAgentId?: string;
+  note?: string;
+  workToDo?: string;
+  workAlert?: boolean;
+  workHistory: WorkHistoryItem[];
+}
+
+export interface Tenant {
+  id: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  idType: IdType;
+  idImageUrl?: string;
+  insuranceInfo: string;
+  insuranceImageUrl?: string;
+  doorCode: string;
+  agentId: string;
+  rentedBoxes: { boxId: string; price: number }[];
+  startDate: string;
+  endDate?: string | null;
+  potentialEndDate: string;
+  info: string;
+  unpaidRent: number;
+  // New fields for payment tracking
+  paymentStatus: PaymentStatus;
+  lastPaymentDate?: string;
+  nextDueDate?: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  agencyId: string;
+  personalCode: string;
+  photoUrl?: string;
+  username: string;
+  email: string;
+  phone: string;
+  doorCode: string;
+  password?: string; // For setting/resetting agent password by admin
+}
+
+export interface Agency {
+  id: string;
+  name: string;
+  managementFee: number; // percentage
+  entryFee: number; // fixed amount
+  logoUrl?: string;
+  email: string;
+  phone: string;
+  reportContactEmail?: string;
+}
+
+export interface ChatMessage {
+  sender: 'user' | 'gemini';
+  text: string;
+  isError?: boolean;
+}
+
+// Interfaces for report analysis
+export interface ExtractedReportData {
+  boxNumber: string;
+  tenantName: string;
+  rentAmount: number;
+}
+
+export interface AnalysisDiscrepancy {
+  boxId: string;
+  reportData: ExtractedReportData;
+  appData: {
+    box: Box | null;
+    tenant: Tenant | null;
+  };
+  reason: string;
+}
+
+export interface AnalysisMatch {
+  boxId: string;
+  reportData: ExtractedReportData;
+  appData: {
+    box: Box;
+    tenant: Tenant;
+  };
+}
+
+export interface AnalysisResult {
+  matches: AnalysisMatch[];
+  discrepancies: AnalysisDiscrepancy[];
+}
+
+export interface ActivityLog {
+  id: string;
+  timestamp: any; // Firestore Timestamp
+  userRole: UserRole;
+  userName: string;
+  action: string;
+}
+
+export interface GuidedVideo {
+  id: string;
+  title: string;
+  storageUrl: string;
+  timestamp: any; // Firestore Timestamp
+}

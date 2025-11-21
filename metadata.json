@@ -1,0 +1,5 @@
+{
+  "name": "BEEBOX LAON - Gestion de Parc",
+  "description": "Une application complète pour la gestion d'un parc de location de boxes de stockage. Elle permet aux administrateurs et agents de gérer les boxes, les locataires, et les agences, avec un chatbot intégré pour l'assistance.",
+  "requestFramePermissions": []
+}
