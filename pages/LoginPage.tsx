@@ -14,71 +14,106 @@ const EyeSlashIcon: React.FC<{ className?: string }> = ({ ...props }) => (
     </svg>
 );
 
-
 const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState('beeboxlaon@gmail.com');
-    const [password, setPassword] = useState('@Sodomie123');
-    const [error, setError] = useState<boolean>(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(false);
+        setError('');
         setIsLoading(true);
         try {
             await auth.signInWithEmailAndPassword(email, password);
-            // onAuthStateChanged in App.tsx will handle redirection
+            // onAuthStateChanged dans AuthContext gère la redirection
         } catch (err: any) {
-            setError(true);
-            if (password !== 'password123') {
-                setPassword('password123');
+            // Afficher le code d'erreur Firebase pour diagnostic
+            const code = err.code || '';
+            if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+                setError('Email ou mot de passe incorrect.');
+            } else if (code === 'auth/operation-not-allowed') {
+                setError('Connexion email/mot de passe non activée dans Firebase Console. Activez-la dans Authentication > Sign-in method.');
+            } else if (code === 'auth/too-many-requests') {
+                setError('Trop de tentatives. Réessayez dans quelques minutes.');
+            } else {
+                setError(`Erreur: ${code || err.message}`);
             }
         } finally {
             setIsLoading(false);
         }
     };
-    
-    // Adjusted styles for pixel-perfect match
-    const inputClasses = "appearance-none block w-full bg-transparent pb-1 border-b border-slate-300 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-0 text-sm text-slate-800";
-    
+
+    // Taille de police minimum 18px (text-lg = 18px)
+    const inputClasses = "appearance-none block w-full bg-transparent pb-2 border-b-2 border-slate-300 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-0 text-lg text-slate-800";
+
     return (
         <div className="min-h-screen bg-[#E3E8EE] flex flex-col justify-center items-center p-4 font-sans">
-            <div className="w-full max-w-sm">
-                <div className="bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-8 sm:p-10">
-                    
+            <div className="w-full max-w-md">
+                <div className="bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-10">
+
                     <div className="text-center mb-10">
-                        <h1 className={`text-xl font-bold text-slate-700`}>Gestion du Parc</h1>
-                         {error && (
-                            <div className="mt-6 text-center text-sm text-red-700 bg-red-100 p-3 rounded-lg">
-                                <p className="font-medium">Une erreur de connexion est survenue.</p>
-                                <p>Veuillez réessayer.</p>
+                        <h1 className="text-2xl font-bold text-slate-700">BEEBOX LAON</h1>
+                        <p className="text-lg text-slate-500 mt-1">Gestion du Parc</p>
+                        {error && (
+                            <div className="mt-6 text-center text-lg text-red-700 bg-red-100 p-4 rounded-lg">
+                                <p>{error}</p>
                             </div>
                         )}
                     </div>
-                    
+
                     <form onSubmit={handleLogin} className="space-y-8">
                         <div>
-                            <label htmlFor="email" className="block text-xs font-medium text-slate-500">Email</label>
-                            <input id="email" name="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required
-                                className={`${inputClasses} mt-2`} />
+                            <label htmlFor="email" className="block text-lg font-medium text-slate-600">Email</label>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                required
+                                placeholder="votre@email.fr"
+                                className={`${inputClasses} mt-2`}
+                            />
                         </div>
 
                         <div>
-                            <label htmlFor="password"className="block text-xs font-medium text-slate-500">Mot de passe</label>
+                            <label htmlFor="password" className="block text-lg font-medium text-slate-600">Mot de passe</label>
                             <div className="relative mt-2">
-                                <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required
-                                    className={inputClasses} />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center text-sm leading-5" aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}>
-                                    {showPassword ? <EyeIcon className="h-5 w-5 text-slate-400" /> : <EyeSlashIcon className="h-5 w-5 text-slate-400" />}
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    autoComplete="current-password"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    required
+                                    placeholder="••••••••"
+                                    className={inputClasses}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center"
+                                    aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+                                >
+                                    {showPassword
+                                        ? <EyeIcon className="h-6 w-6 text-slate-400" />
+                                        : <EyeSlashIcon className="h-6 w-6 text-slate-400" />
+                                    }
                                 </button>
                             </div>
                         </div>
 
                         <div className="pt-4">
-                             <button type="submit" disabled={isLoading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors">
-                                {isLoading ? 'Connexion...' : 'Se connecter'}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
+                            >
+                                {isLoading ? 'Connexion en cours...' : 'Se connecter'}
                             </button>
                         </div>
                     </form>

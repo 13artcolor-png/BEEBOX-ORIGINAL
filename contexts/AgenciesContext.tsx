@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { db, auth, logActivity } from '../services/firebase';
+import { db, auth, firestoreGet, logActivity } from '../services/firebase';
 import { Agency, Agent, UserRole } from '../types';
 import { sendEmailNotification } from '../services/notificationService';
+import { useAuth } from './AuthContext';
 
 interface AgenciesContextType {
   agencies: Agency[];
@@ -33,44 +34,49 @@ interface AgenciesProviderProps {
 }
 
 export const AgenciesProvider: React.FC<AgenciesProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Real-time listeners
+  // Listeners Firestore activés uniquement quand l'utilisateur est connecté
   useEffect(() => {
-    const unsubscribeAgencies = db.collection('agencies').onSnapshot(
-      (querySnapshot) => {
-        const data = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Agency[];
-        setAgencies(data);
-      },
-      (error) => console.error('Error listening to agencies:', error)
-    );
+    if (!isAuthenticated) {
+      setAgencies([]);
+      setAgents([]);
+      setDataLoaded(false);
+      return;
+    }
 
-    const unsubscribeAgents = db.collection('agents').onSnapshot(
-      (querySnapshot) => {
-        const data = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Agent[];
-        setAgents(data);
+    let cancelled = false;
+    setDataLoaded(false);
+
+    const fetchAll = async () => {
+      try {
+        const [agenciesData, agentsData] = await Promise.all([
+          firestoreGet('agencies'),
+          firestoreGet('agents'),
+        ]);
+        if (cancelled) return;
+        setAgencies(agenciesData as Agency[]);
+        setAgents(agentsData as Agent[]);
         setDataLoaded(true);
-      },
-      (error) => {
-        console.error('Error listening to agents:', error);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error fetching agencies/agents:', error);
         setDataLoaded(true);
       }
-    );
+    };
+
+    fetchAll();
+    const interval = setInterval(fetchAll, 30000);
 
     return () => {
-      unsubscribeAgencies();
-      unsubscribeAgents();
+      cancelled = true;
+      clearInterval(interval);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const addAgency = async (
     agencyData: Omit<Agency, 'id'>,
@@ -208,10 +214,15 @@ export const AgenciesProvider: React.FC<AgenciesProviderProps> = ({ children }) 
       await db.collection('agents').doc(id).update(agentData);
 
       if (password) {
-        console.error('MISE À JOUR DU MOT DE PASSE IGNORÉE : Cette action nécessite une fonction Cloud.');
-        alert(
-          "Les informations de l'agent ont été mises à jour, mais le mot de passe n'a pas pu être changé. Cette action nécessite des droits d'administrateur sur le serveur."
-        );
+        // Firebase Client SDK ne permet pas de changer le mot de passe d'un autre utilisateur.
+        // On envoie un email de réinitialisation à l'agent pour qu'il définisse son nouveau mot de passe.
+        try {
+          await auth.sendPasswordResetEmail(updatedAgent.email);
+          alert(`Un email de réinitialisation du mot de passe a été envoyé à ${updatedAgent.email}. L'agent pourra définir son nouveau mot de passe via ce lien.`);
+        } catch (resetError: any) {
+          console.error('Erreur envoi email reset:', resetError);
+          alert(`Informations mises à jour. Impossible d'envoyer l'email de réinitialisation : ${resetError.message}`);
+        }
       }
 
       await logActivity(userName, userRole, `Mise à jour de l'agent : ${updatedAgent.name}.`);

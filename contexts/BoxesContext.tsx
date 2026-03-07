@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { db, logActivity } from '../services/firebase';
+import { db, firestoreGet, logActivity } from '../services/firebase';
 import { Box, BoxStatus } from '../types';
+import { useAuth } from './AuthContext';
 
 interface BoxesContextType {
   boxes: Box[];
@@ -24,35 +25,44 @@ interface BoxesProviderProps {
 }
 
 export const BoxesProvider: React.FC<BoxesProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Real-time listener for boxes
+  // Fetch Firestore via .get() (polling) — onSnapshot WebSocket incompatible avec Firebase v8 CDN
   useEffect(() => {
-    const unsubscribe = db
-      .collection('boxes')
-      .onSnapshot(
-        (querySnapshot) => {
-          const data = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Box[];
-          
-          // Sort by ID
-          data.sort((a, b) => parseInt(a.id || '0') - parseInt(b.id || '0'));
-          
-          setBoxes(data);
-          setDataLoaded(true);
-        },
-        (error) => {
-          console.error('Error listening to boxes:', error);
-          setDataLoaded(true);
-        }
-      );
+    if (!isAuthenticated) {
+      setBoxes([]);
+      setDataLoaded(false);
+      return;
+    }
 
-    return () => unsubscribe();
-  }, []);
+    let cancelled = false;
+    setDataLoaded(false);
+
+    const fetchBoxes = async () => {
+      try {
+        const data = await firestoreGet('boxes') as Box[];
+        if (cancelled) return;
+        data.sort((a, b) => parseInt(a.id || '0') - parseInt(b.id || '0'));
+        setBoxes(data);
+        setDataLoaded(true);
+      } catch (error: any) {
+        if (cancelled) return;
+        console.error('Error fetching boxes:', error?.code, error?.message);
+        setDataLoaded(true);
+      }
+    };
+
+    fetchBoxes();
+    const interval = setInterval(fetchBoxes, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isAuthenticated]);
 
   const updateBoxDetails = async (updatedBox: Box, userName: string, userRole: string) => {
     setIsSaving(true);
@@ -72,6 +82,8 @@ export const BoxesProvider: React.FC<BoxesProviderProps> = ({ children }) => {
 
       const { id, ...boxData } = updatedBox;
       await db.collection('boxes').doc(id).update(boxData);
+      // Mise à jour locale immédiate sans attendre le prochain poll
+      setBoxes(prev => prev.map(b => b.id === id ? updatedBox : b));
 
       if (changes.length > 0) {
         await logActivity(userName, userRole as any, `Modification du box #${id}: ${changes.join(', ')}`);

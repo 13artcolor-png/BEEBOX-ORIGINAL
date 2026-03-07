@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Seuls les utilisateurs Firebase authentifiés (avec email, pas anonymes)
+    // peuvent accéder aux données de l'application.
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    // Toutes les collections nécessitent une authentification réelle (non anonyme)
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

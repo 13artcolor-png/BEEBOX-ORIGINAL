@@ -5,6 +5,7 @@ import { UserRole, PaymentStatus } from './types';
 
 // Components
 import Header from './components/Header';
+import LoginPage from './pages/LoginPage';
 import BoxesPage from './pages/BoxesPage';
 import TenantsPage from './pages/TenantsPage';
 import AgencyPage from './pages/AgencyPage';
@@ -261,13 +262,21 @@ function App() {
     return () => clearTimeout(timer);
   }, [tenants, appUser, allDataLoaded]);
 
-  if (authLoading || !allDataLoaded) {
+  // Attente de la résolution de l'état d'authentification
+  if (authLoading) {
     return <FullScreenLoader message="Chargement en cours..." />;
   }
 
+  // Utilisateur non connecté → afficher la page de connexion
   if (!appUser) {
-    return <FullScreenLoader message="Authentification..." />;
+    return <LoginPage />;
   }
+
+  // Utilisateur connecté mais données pas encore chargées
+  if (!allDataLoaded) {
+    return <FullScreenLoader message="Chargement des données..." />;
+  }
+
 
   // Handlers
   const handleBoxClick = (box: any) => {
@@ -585,14 +594,6 @@ function App() {
       alert('Une erreur est survenue.');
     }
   };
-
-  if (!allDataLoaded) {
-    return <FullScreenLoader message="Chargement en cours..." />;
-  }
-
-  if (!appUser) {
-    return <FullScreenLoader message="Authentification..." />;
-  }
 
   const currentPage = () => {
     switch (activePage) {

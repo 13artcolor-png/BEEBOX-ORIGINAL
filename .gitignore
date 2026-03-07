@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.claude/
+desktop.ini
+Img/desktop.ini
+*.local

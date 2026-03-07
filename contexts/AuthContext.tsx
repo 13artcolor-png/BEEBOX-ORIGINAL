@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth } from '../services/firebase';
+import { auth, firestoreGet } from '../services/firebase';
 import { UserRole } from '../types';
-import { initialAdminUser } from '../hooks/useMockData';
 
 interface AppUser {
   role: UserRole;
@@ -36,48 +35,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Écouter les changements d'état d'authentification Firebase
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        // Utilisateur connecté
-        console.log('Firebase user authenticated:', firebaseUser.email);
-        setAppUser({
-          role: UserRole.Admin,
-          agentId: null,
-          name: initialAdminUser.name,
-        });
-        setIsAuthenticated(true);
-        setLoading(false);
-      } else {
-        // Pas d'utilisateur - connexion automatique anonyme
-        console.log('No Firebase user, signing in anonymously...');
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: any) => {
+      if (firebaseUser && firebaseUser.email) {
         try {
-          await auth.signInAnonymously();
-          setAppUser({
-            role: UserRole.Admin,
-            agentId: null,
-            name: initialAdminUser.name,
-          });
-          setIsAuthenticated(true);
+          await firebaseUser.getIdToken(true);
+        } catch (e) {}
+
+        try {
+          // Si l'email est dans la collection 'agents' → Agent, sinon → Admin
+          const agentsData = await firestoreGet('agents');
+          const agent = agentsData.find((a: any) =>
+            a.email?.toLowerCase() === firebaseUser.email?.toLowerCase()
+          );
+
+          if (agent) {
+            setAppUser({ role: UserRole.Agent, agentId: agent.id, name: agent.name || firebaseUser.email });
+          } else {
+            setAppUser({ role: UserRole.Admin, agentId: null, name: firebaseUser.displayName || firebaseUser.email });
+          }
         } catch (error) {
-          console.error('Error signing in anonymously:', error);
-          // Même en cas d'erreur, on permet l'accès
-          setAppUser({
-            role: UserRole.Admin,
-            agentId: null,
-            name: initialAdminUser.name,
-          });
-          setIsAuthenticated(true);
+          console.error('Erreur détermination du rôle:', error);
+          setAppUser({ role: UserRole.Admin, agentId: null, name: firebaseUser.displayName || firebaseUser.email });
         }
-        setLoading(false);
+
+        setIsAuthenticated(true);
+      } else {
+        setAppUser(null);
+        setIsAuthenticated(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const logout = () => {
-    auth.signOut();
+  const logout = async () => {
+    await auth.signOut();
     setAppUser(null);
     setIsAuthenticated(false);
   };

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { db, auth, logActivity } from '../services/firebase';
+import { db, auth, firestoreGet, logActivity } from '../services/firebase';
 import { AdminUser, ActivityLog, GuidedVideo, UserRole } from '../types';
 import { sendEmailNotification } from '../services/notificationService';
+import { useAuth } from './AuthContext';
 
 interface DataContextType {
   adminUser: AdminUser | null;
@@ -29,82 +30,67 @@ interface DataProviderProps {
 }
 
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [guidedVideos, setGuidedVideos] = useState<GuidedVideo[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Real-time listeners
+  // Fetch Firestore via .get() (polling) — onSnapshot WebSocket incompatible avec Firebase v8 CDN
   useEffect(() => {
-    let loadedCount = 0;
-    const collectionsToLoad = 3;
+    if (!isAuthenticated) {
+      setAdminUser(null);
+      setActivityLogs([]);
+      setGuidedVideos([]);
+      setDataLoaded(false);
+      return;
+    }
 
-    const onDataLoaded = () => {
-      loadedCount++;
-      if (loadedCount >= collectionsToLoad) {
+    let cancelled = false;
+    setDataLoaded(false);
+
+    const fetchAll = async () => {
+      try {
+        const [adminData, logsData, videosData] = await Promise.all([
+          firestoreGet('admin'),
+          firestoreGet('activityLogs', 200),
+          firestoreGet('guidedVideos'),
+        ]);
+        if (cancelled) return;
+
+        setAdminUser(adminData.length > 0 ? adminData[0] as AdminUser : null);
+
+        // Tri côté client par timestamp desc
+        logsData.sort((a, b) => {
+          const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : 0;
+          const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : 0;
+          return bTime - aTime;
+        });
+        videosData.sort((a, b) => {
+          const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : 0;
+          const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : 0;
+          return bTime - aTime;
+        });
+
+        setActivityLogs(logsData as ActivityLog[]);
+        setGuidedVideos(videosData as GuidedVideo[]);
+        setDataLoaded(true);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error fetching data:', error);
         setDataLoaded(true);
       }
     };
 
-    const unsubscribeAdmin = db.collection('admin').onSnapshot(
-      (querySnapshot) => {
-        if (!querySnapshot.empty) {
-          const adminDoc = querySnapshot.docs[0];
-          setAdminUser({ id: adminDoc.id, ...adminDoc.data() } as AdminUser);
-        } else {
-          setAdminUser(null);
-        }
-        onDataLoaded();
-      },
-      (error) => {
-        console.error('Error listening to admin:', error);
-        onDataLoaded();
-      }
-    );
-
-    const unsubscribeLogs = db
-      .collection('activityLogs')
-      .orderBy('timestamp', 'desc')
-      .onSnapshot(
-        (querySnapshot) => {
-          const data = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as ActivityLog[];
-          setActivityLogs(data);
-          onDataLoaded();
-        },
-        (error) => {
-          console.error('Error listening to activity logs:', error);
-          onDataLoaded();
-        }
-      );
-
-    const unsubscribeVideos = db
-      .collection('guidedVideos')
-      .orderBy('timestamp', 'desc')
-      .onSnapshot(
-        (querySnapshot) => {
-          const data = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as GuidedVideo[];
-          setGuidedVideos(data);
-          onDataLoaded();
-        },
-        (error) => {
-          console.error('Error listening to guided videos:', error);
-          onDataLoaded();
-        }
-      );
+    fetchAll();
+    const interval = setInterval(fetchAll, 30000);
 
     return () => {
-      unsubscribeAdmin();
-      unsubscribeLogs();
-      unsubscribeVideos();
+      cancelled = true;
+      clearInterval(interval);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const updateAdminProfile = async (updatedAdmin: AdminUser, userName: string, userRole: UserRole) => {
     if (!adminUser || !adminUser.id) {

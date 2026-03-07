@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { db, logActivity } from '../services/firebase';
+import { db, storage, firestoreGet, logActivity } from '../services/firebase';
 import { Tenant, PaymentStatus, BoxStatus, UserRole } from '../types';
 import { sendEmailNotification } from '../services/notificationService';
+import { useAuth } from './AuthContext';
 
 interface TenantsContextType {
   tenants: Tenant[];
@@ -48,35 +49,44 @@ interface TenantsProviderProps {
 }
 
 export const TenantsProvider: React.FC<TenantsProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Real-time listener for tenants
+  // Listener Firestore activé uniquement quand l'utilisateur est connecté
   useEffect(() => {
-    const unsubscribe = db
-      .collection('tenants')
-      .onSnapshot(
-        (querySnapshot) => {
-          const data = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Tenant[];
-          
-          // Sort by ID
-          data.sort((a, b) => parseInt(a.id || '0') - parseInt(b.id || '0'));
-          
-          setTenants(data);
-          setDataLoaded(true);
-        },
-        (error) => {
-          console.error('Error listening to tenants:', error);
-          setDataLoaded(true);
-        }
-      );
+    if (!isAuthenticated) {
+      setTenants([]);
+      setDataLoaded(false);
+      return;
+    }
 
-    return () => unsubscribe();
-  }, []);
+    let cancelled = false;
+    setDataLoaded(false);
+
+    const fetchTenants = async () => {
+      try {
+        const data = await firestoreGet('tenants') as Tenant[];
+        if (cancelled) return;
+        data.sort((a, b) => parseInt(a.id || '0') - parseInt(b.id || '0'));
+        setTenants(data);
+        setDataLoaded(true);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error fetching tenants:', error);
+        setDataLoaded(true);
+      }
+    };
+
+    fetchTenants();
+    const interval = setInterval(fetchTenants, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isAuthenticated]);
 
   const saveTenant = async (
     tenantData: Omit<Tenant, 'id' | 'rentedBoxes' | 'unpaidRent' | 'paymentStatus'>,
@@ -165,6 +175,20 @@ export const TenantsProvider: React.FC<TenantsProviderProps> = ({ children }) =>
           delete cleanTenantData[key];
         }
       });
+
+      // Upload de la pièce d'identité vers Firebase Storage
+      if (files.idImage) {
+        const idRef = storage.ref(`tenants/${id}/id_${Date.now()}_${files.idImage.name}`);
+        await idRef.put(files.idImage);
+        cleanTenantData.idImageUrl = await idRef.getDownloadURL();
+      }
+
+      // Upload de l'assurance vers Firebase Storage
+      if (files.insuranceImage) {
+        const insRef = storage.ref(`tenants/${id}/insurance_${Date.now()}_${files.insuranceImage.name}`);
+        await insRef.put(files.insuranceImage);
+        cleanTenantData.insuranceImageUrl = await insRef.getDownloadURL();
+      }
 
       await db.collection('tenants').doc(id).update(cleanTenantData);
 
