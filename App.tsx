@@ -11,6 +11,7 @@ import TenantsPage from './pages/TenantsPage';
 import AgencyPage from './pages/AgencyPage';
 import DataPage from './pages/DataPage';
 import CalendarPage from './pages/CalendarPage';
+import FinancesPage from './pages/FinancesPage';
 import ChatBot from './components/ChatBot';
 import AddTenantModal from './components/AddTenantModal';
 import EditTenantModal from './components/EditTenantModal';
@@ -637,6 +638,9 @@ function App() {
             onDeleteAgent={handleInitiateDeleteAgent}
           />
         );
+      case 'finances':
+        if (appUser.role !== UserRole.Admin) return null;
+        return <FinancesPage />;
       case 'data':
         if (appUser.role !== UserRole.Admin) return null;
         return adminUser ? (

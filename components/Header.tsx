@@ -42,6 +42,7 @@ const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, currentUserR
             {currentUserRole === UserRole.Admin && (
               <>
                 <a onClick={() => setActivePage('calendar')} className={navItemClasses('calendar')}>Historique</a>
+                <a onClick={() => setActivePage('finances')} className={navItemClasses('finances')}>Finances</a>
                 <a onClick={() => setActivePage('agency')} className={navItemClasses('agency')}>Agences & Agents</a>
                 <a onClick={() => setActivePage('data')} className={navItemClasses('data')}>Données & Admin</a>
               </>

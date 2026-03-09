@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { db, auth, firestoreGet, logActivity } from '../services/firebase';
-import { AdminUser, ActivityLog, GuidedVideo, UserRole } from '../types';
+import { AdminUser, ActivityLog, GuidedVideo, GeranceRecord, HonorairesRecord, UserRole } from '../types';
 import { sendEmailNotification } from '../services/notificationService';
 import { useAuth } from './AuthContext';
 
@@ -8,6 +8,8 @@ interface DataContextType {
   adminUser: AdminUser | null;
   activityLogs: ActivityLog[];
   guidedVideos: GuidedVideo[];
+  geranceRecords: GeranceRecord[];
+  honorairesRecords: HonorairesRecord[];
   dataLoaded: boolean;
   isSaving: boolean;
   updateAdminProfile: (updatedAdmin: AdminUser, userName: string, userRole: UserRole) => Promise<void>;
@@ -34,6 +36,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [guidedVideos, setGuidedVideos] = useState<GuidedVideo[]>([]);
+  const [geranceRecords, setGeranceRecords] = useState<GeranceRecord[]>([]);
+  const [honorairesRecords, setHonorairesRecords] = useState<HonorairesRecord[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -43,6 +47,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       setAdminUser(null);
       setActivityLogs([]);
       setGuidedVideos([]);
+      setGeranceRecords([]);
+      setHonorairesRecords([]);
       setDataLoaded(false);
       return;
     }
@@ -52,14 +58,18 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
     const fetchAll = async () => {
       try {
-        const [adminData, logsData, videosData] = await Promise.all([
+        const [adminData, logsData, videosData, geranceData, honorairesData] = await Promise.all([
           firestoreGet('admin'),
           firestoreGet('activityLogs', 200),
           firestoreGet('guidedVideos'),
+          firestoreGet('geranceRecords', 2000),
+          firestoreGet('honorairesRecords', 2000),
         ]);
         if (cancelled) return;
 
         setAdminUser(adminData.length > 0 ? adminData[0] as AdminUser : null);
+        setGeranceRecords(geranceData as GeranceRecord[]);
+        setHonorairesRecords(honorairesData as HonorairesRecord[]);
 
         // Tri côté client par timestamp desc
         logsData.sort((a, b) => {
@@ -75,6 +85,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
         setActivityLogs(logsData as ActivityLog[]);
         setGuidedVideos(videosData as GuidedVideo[]);
+
         setDataLoaded(true);
       } catch (error) {
         if (cancelled) return;
@@ -175,6 +186,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     adminUser,
     activityLogs,
     guidedVideos,
+    geranceRecords,
+    honorairesRecords,
     dataLoaded,
     isSaving,
     updateAdminProfile,

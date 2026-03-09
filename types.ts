@@ -180,3 +180,37 @@ export interface GuidedVideo {
   storageUrl: string;
   timestamp: any; // Firestore Timestamp
 }
+
+export interface GeranceRecord {
+  id: string;
+  boxId: string;
+  codeLot: string;
+  codeLocataire: string;
+  nomLocataire: string;
+  loyer: number;
+  assurance: number;
+  tva: number;
+  totalQuittance: number;
+  totalRegle: number;
+  solde: number;
+  periode: string;
+  fichier: string;
+  importedAt: string;
+}
+
+export interface HonorairesRecord {
+  id: string;
+  factureNum: string;
+  dateFacture: string;
+  bailleur: string;
+  nomLocataire: string;
+  loyer: number;
+  ht: number;
+  tva: number;
+  ttc: number;
+  prestation: string;
+  dateEffet: string;
+  mandatNum: string;
+  fichier: string;
+  importedAt: string;
+}

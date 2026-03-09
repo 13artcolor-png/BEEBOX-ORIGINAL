@@ -1,7 +1,8 @@
 
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Tenant, Box, Agent, Agency, BoxStatus, AdminUser, ExtractedReportData, AnalysisResult, PaymentStatus } from '../types';
+import { Tenant, Box, Agent, Agency, BoxStatus, AdminUser, ExtractedReportData, AnalysisResult, PaymentStatus, GeranceRecord, HonorairesRecord } from '../types';
+import { useData } from '../contexts';
 import BoxManagementTable from '../components/BoxManagementTable';
 import OccupancyRevenueChart from '../components/OccupancyRevenueChart';
 import { analyzeReportImage } from '../services/geminiService';
@@ -1690,8 +1691,19 @@ const CsvImporter: React.FC<{ boxes: Box[], tenants: Tenant[], onUpdateBox: (box
 
 type Tab = 'stats' | 'gestion' | 'analyse' | 'admin' | 'import';
 
+// Extrait YYYY-MM depuis un nom de fichier type "gerance_2024_01.csv" ou depuis dateFacture "DD/MM/YYYY"
+const extractYearMonth = (fichier: string): string => {
+    const m = fichier.match(/(\d{4})[_-](\d{2})/);
+    return m ? `${m[1]}-${m[2]}` : '';
+};
+const parseDateFacture = (d: string): string => {
+    const parts = d.split('/');
+    return parts.length === 3 ? `${parts[2]}-${parts[1].padStart(2, '0')}` : '';
+};
+
 const DataPage: React.FC<DataPageProps> = ({ tenants, boxes, agents, agencies, onUpdateBox, onUpdateBoxCount, adminUser, onUpdateAdminProfile, onSeedDatabase }) => {
     const [activeTab, setActiveTab] = useState<Tab>('stats');
+    const { geranceRecords, honorairesRecords } = useData();
 
     const occupiedBoxes = boxes.filter(b => b.status === BoxStatus.Occupied).length;
     const totalBoxes = boxes.length;
@@ -1714,6 +1726,37 @@ const DataPage: React.FC<DataPageProps> = ({ tenants, boxes, agents, agencies, o
         const now = new Date();
         return startDate.getFullYear() === now.getFullYear() && startDate.getMonth() === now.getMonth();
     }).length;
+
+    // Stats financières depuis geranceRecords et honorairesRecords
+    const lastGerancePeriod = useMemo(() => {
+        const periods = geranceRecords.map(r => extractYearMonth(r.fichier)).filter(Boolean).sort();
+        return periods.length > 0 ? periods[periods.length - 1] : null;
+    }, [geranceRecords]);
+
+    const geranceLastPeriod = useMemo(() =>
+        geranceRecords.filter(r => extractYearMonth(r.fichier) === lastGerancePeriod),
+        [geranceRecords, lastGerancePeriod]);
+
+    const totalLoyersEncaisses = geranceLastPeriod.reduce((s, r) => s + (r.totalRegle || 0), 0);
+    const totalImpayesGlobal = geranceRecords.reduce((s, r) => s + Math.max(0, r.solde || 0), 0);
+
+    const lastHonPeriod = useMemo(() => {
+        const periods = honorairesRecords.map(r => parseDateFacture(r.dateFacture)).filter(Boolean).sort();
+        return periods.length > 0 ? periods[periods.length - 1] : null;
+    }, [honorairesRecords]);
+
+    const honLastPeriod = useMemo(() =>
+        honorairesRecords.filter(r => parseDateFacture(r.dateFacture) === lastHonPeriod),
+        [honorairesRecords, lastHonPeriod]);
+
+    const totalHonorairesHTT = honLastPeriod.reduce((s, r) => s + (r.ttc || 0), 0);
+    const netProprietaire = totalLoyersEncaisses - totalHonorairesHTT;
+
+    const vacanceBoxes = boxes.filter(b => b.status !== BoxStatus.Occupied).length;
+    const avgBoxPrice = boxes.length > 0
+        ? boxes.filter(b => b.price > 0).reduce((s, b) => s + b.price, 0) / Math.max(1, boxes.filter(b => b.price > 0).length)
+        : 0;
+    const vacanceValeur = vacanceBoxes * avgBoxPrice;
 
     const agentPerformance = agents.map(agent => {
         const agentTenants = tenants.filter(t => t.agentId === agent.id);
@@ -1780,7 +1823,14 @@ const DataPage: React.FC<DataPageProps> = ({ tenants, boxes, agents, agencies, o
     }, [boxes, tenants]);
 
      const chartData = useMemo(() => {
-        const data: { month: string; occupancy: number; revenue: number }[] = [];
+        // Index honoraires par YYYY-MM (depuis dateFacture DD/MM/YYYY)
+        const honByMonth = new Map<string, number>();
+        honorairesRecords.forEach(r => {
+            const ym = parseDateFacture(r.dateFacture);
+            if (ym) honByMonth.set(ym, (honByMonth.get(ym) ?? 0) + (r.ttc || 0));
+        });
+
+        const data: { month: string; occupancy: number; revenue: number; honoraires: number }[] = [];
         const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: '2-digit' });
 
         const cursor = new Date(2023, 0, 1);
@@ -1812,16 +1862,18 @@ const DataPage: React.FC<DataPageProps> = ({ tenants, boxes, agents, agencies, o
                 });
             }
 
+            const ym = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
             data.push({
                 month: monthFormatter.format(cursor),
                 occupancy: occupiedCount,
                 revenue: monthlyRevenue,
+                honoraires: honByMonth.get(ym) ?? 0,
             });
 
             cursor.setMonth(cursor.getMonth() + 1);
         }
         return data;
-    }, [tenants, boxes]);
+    }, [tenants, boxes, honorairesRecords]);
 
     const tabClasses = (tabName: Tab) => `px-4 py-2 text-sm font-medium rounded-md cursor-pointer transition-all ${activeTab === tabName ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:bg-slate-200/50'}`;
 
@@ -1846,6 +1898,32 @@ const DataPage: React.FC<DataPageProps> = ({ tenants, boxes, agents, agencies, o
               <StatCard title="Locataires Actifs" value={activeTenantsCount} description={`${pastTenants.length} locataires passés`} />
               <StatCard title="Nouveaux Locataires ce Mois-ci" value={tenantsThisMonth} description="Entrées enregistrées" />
           </div>
+
+          {/* Stats financières depuis les données importées */}
+          {geranceRecords.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard
+                title="Loyers encaissés (dernier relevé)"
+                value={`${totalLoyersEncaisses.toFixed(2)} €`}
+                description={lastGerancePeriod ? `Période ${lastGerancePeriod}` : 'Gérance importée'}
+              />
+              <StatCard
+                title="Honoraires agence (dernier mois)"
+                value={`${totalHonorairesHTT.toFixed(2)} €`}
+                description={lastHonPeriod ? `Mois ${lastHonPeriod}` : honorairesRecords.length === 0 ? 'Aucun honoraire importé' : 'Honoraires importés'}
+              />
+              <StatCard
+                title="Net propriétaire"
+                value={`${netProprietaire.toFixed(2)} €`}
+                description="Loyers encaissés − honoraires agence"
+              />
+              <StatCard
+                title="Vacance locative"
+                value={`${vacanceValeur.toFixed(0)} € / mois`}
+                description={`${vacanceBoxes} box${vacanceBoxes > 1 ? 'es' : ''} libre${vacanceBoxes > 1 ? 's' : ''} × loyer moyen ${avgBoxPrice.toFixed(0)} €`}
+              />
+            </div>
+          )}
 
           <ReportDownloader tenants={tenants} boxes={boxes} />
 
