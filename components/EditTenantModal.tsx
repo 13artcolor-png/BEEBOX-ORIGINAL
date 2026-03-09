@@ -30,9 +30,10 @@ interface EditTenantModalProps {
   onClose: () => void;
   onSave: (tenant: Tenant, files: { idImage: File | null, insuranceImage: File | null }) => void;
   tenantToEdit: Tenant;
+  isAdmin?: boolean;
 }
 
-const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSave, tenantToEdit }) => {
+const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSave, tenantToEdit, isAdmin = false }) => {
   const [formData, setFormData] = useState<Tenant>(tenantToEdit);
   const [doorCodeError, setDoorCodeError] = useState('');
   const [idImage, setIdImage] = useState<File | null>(null);
@@ -104,6 +105,7 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
             <InputField label="Prénom" name="firstName" value={formData.firstName} onChange={handleChange} required />
             <InputField label="Nom" name="lastName" value={formData.lastName} onChange={handleChange} required />
             <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+            <InputField label="Code locataire (réf. ORPI)" name="codeLocataire" value={formData.codeLocataire || ''} onChange={handleChange} />
             <InputField label="Téléphone (10 chiffres)" name="phone" value={formData.phone} onChange={handleChange} />
             <div className="lg:col-span-3">
               <InputField label="Adresse" name="address" value={formData.address} onChange={handleChange} />
@@ -118,10 +120,19 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
                 </select>
              </div>
             <InputField label="N° Justificatif" name="idNumber" value={formData.idNumber} onChange={handleChange} />
-             <div className="lg:col-span-3">
+             <div className="lg:col-span-2">
                 <InputField label="Assurance (Compagnie & N° Contrat)" name="insuranceInfo" value={formData.insuranceInfo} onChange={handleChange} />
              </div>
+             <div>
+                <InputField label="Montant assurance (€)" name="assuranceMontant" type="number" value={formData.assuranceMontant?.toString() || ''} onChange={(e) => setFormData(prev => ({ ...prev, assuranceMontant: e.target.value !== '' ? parseFloat(e.target.value) : undefined }))} />
+             </div>
             <InputField label="Date de sortie potentielle" name="potentialEndDate" type="date" value={formData.potentialEndDate} onChange={handleChange} />
+            {isAdmin && (
+              <>
+                <InputField label="Date d'entrée réelle" name="startDate" type="date" value={formData.startDate || ''} onChange={handleChange} />
+                <InputField label="Date de sortie réelle" name="endDate" type="date" value={formData.endDate || ''} onChange={handleChange} />
+              </>
+            )}
              <div className="lg:col-span-3">
                  <label htmlFor="info" className="block text-sm font-medium text-gray-700">Informations particulières</label>
                 <textarea 

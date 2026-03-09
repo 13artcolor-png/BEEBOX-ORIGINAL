@@ -27,6 +27,8 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ box, allBoxes, agentId,
     startDate: new Date().toISOString().split('T')[0],
     potentialEndDate: '',
     info: '',
+    codeLocataire: '',
+    assuranceMontant: '',
   });
 
   const [selectedBoxId, setSelectedBoxId] = useState<string>(box?.id || '');
@@ -118,6 +120,7 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ box, allBoxes, agentId,
       endDate: null,
       idImageUrl,
       insuranceImageUrl,
+      assuranceMontant: formData.assuranceMontant !== '' ? parseFloat(formData.assuranceMontant) : undefined,
     }, selectedBoxId, workData);
   };
 
@@ -169,6 +172,7 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ box, allBoxes, agentId,
                 <InputField label="Prénom" name="firstName" value={formData.firstName} onChange={handleChange} required />
                 <InputField label="Nom" name="lastName" value={formData.lastName} onChange={handleChange} required />
                 <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+                <InputField label="Code locataire (réf. ORPI)" name="codeLocataire" value={formData.codeLocataire} onChange={handleChange} />
                 <InputField label="Téléphone (10 chiffres)" name="phone" value={formData.phone} onChange={handleChange} />
                 <div className="lg:col-span-3">
                   <InputField label="Adresse" name="address" value={formData.address} onChange={handleChange} />
@@ -190,6 +194,9 @@ const AddTenantModal: React.FC<AddTenantModalProps> = ({ box, allBoxes, agentId,
                     <InputField label="Assurance (Compagnie & N° Contrat)" name="insuranceInfo" value={formData.insuranceInfo} onChange={handleChange} />
                  </div>
                  <div>
+                    <InputField label="Montant assurance (€)" name="assuranceMontant" type="number" value={formData.assuranceMontant} onChange={handleChange} />
+                 </div>
+                 <div className="lg:col-span-3">
                     <FileField label="Justificatif d'assurance" name="insuranceFile" onChange={(e) => handleFileChange(e, 'insurance')} fileName={insuranceImage?.name}/>
                  </div>
                 <InputField label="Date d'entrée" name="startDate" type="date" value={formData.startDate} onChange={handleChange} />

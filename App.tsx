@@ -703,6 +703,7 @@ function App() {
           onClose={closeEditTenantModal}
           onSave={handleUpdateTenant}
           tenantToEdit={editingTenant}
+          isAdmin={appUser?.role === UserRole.Admin}
         />
       )}
 

@@ -68,9 +68,15 @@ const BoxManagementTable: React.FC<BoxManagementTableProps> = ({ boxes, onUpdate
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Imm-Lot</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Code Imm.</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">État</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prix (€/mois)</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assurance (€)</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">TVA applicable</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Taux TVA (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type loyer</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Taille (m²)</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Accès Côté:</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Niveau</th>
@@ -82,6 +88,20 @@ const BoxManagementTable: React.FC<BoxManagementTableProps> = ({ boxes, onUpdate
           <tbody className="bg-white divide-y divide-gray-200">
             {boxes.map(box => (
               <tr key={box.id} className="transition-colors duration-150 hover:bg-gray-50">
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
+                  <EditableCell
+                    value={box.immLot || ''}
+                    type="text"
+                    onSave={(newValue) => onUpdateBox({ ...box, immLot: newValue as string })}
+                  />
+                </td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
+                  <EditableCell
+                    value={box.codeImmeuble || ''}
+                    type="text"
+                    onSave={(newValue) => onUpdateBox({ ...box, codeImmeuble: newValue as string })}
+                  />
+                </td>
                 <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-800">#{box.id}</td>
                 <td className="px-6 py-2 whitespace-nowrap text-sm">
                   <div className="flex items-center">
@@ -92,14 +112,43 @@ const BoxManagementTable: React.FC<BoxManagementTableProps> = ({ boxes, onUpdate
                   </div>
                 </td>
                 <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
-                    <EditableCell 
+                    <EditableCell
                         value={box.price}
                         type="number"
                         onSave={(newValue) => onUpdateBox({ ...box, price: newValue as number })}
                     />
                 </td>
                 <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
-                     <EditableCell 
+                    <EditableCell
+                        value={box.assuranceMontant ?? ''}
+                        type="number"
+                        onSave={(newValue) => onUpdateBox({ ...box, assuranceMontant: newValue as number })}
+                    />
+                </td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800 text-center">
+                    <input
+                        type="checkbox"
+                        checked={box.tvaApplicable ?? false}
+                        onChange={(e) => onUpdateBox({ ...box, tvaApplicable: e.target.checked })}
+                        className="w-4 h-4 accent-blue-600 cursor-pointer"
+                    />
+                </td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
+                    <EditableCell
+                        value={box.tvaTaux ?? ''}
+                        type="number"
+                        onSave={(newValue) => onUpdateBox({ ...box, tvaTaux: newValue as number })}
+                    />
+                </td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
+                    <EditableCell
+                        value={box.typeLoyer || ''}
+                        type="text"
+                        onSave={(newValue) => onUpdateBox({ ...box, typeLoyer: newValue as string })}
+                    />
+                </td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-800">
+                     <EditableCell
                         value={box.size}
                         type="text"
                         onSave={(newValue) => onUpdateBox({ ...box, size: newValue as string })}

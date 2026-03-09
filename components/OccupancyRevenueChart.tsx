@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ChartData {
   month: string;
@@ -11,88 +11,170 @@ interface OccupancyRevenueChartProps {
 }
 
 const OccupancyRevenueChart: React.FC<OccupancyRevenueChartProps> = ({ data }) => {
-  const width = 800;
-  const height = 350;
-  const margin = { top: 20, right: 60, bottom: 50, left: 60 };
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; d: ChartData } | null>(null);
+
+  if (data.length === 0) return null;
+
+  const width = 900;
+  const height = 360;
+  const margin = { top: 30, right: 80, bottom: 50, left: 65 };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  const maxOccupancy = Math.max(...data.map(d => d.occupancy), 0) || 1;
-  const maxRevenue = Math.max(...data.map(d => d.revenue), 0) || 100;
+  const maxOccupancy = Math.max(...data.map(d => d.occupancy), 1);
+  const maxRevenue = Math.max(...data.map(d => d.revenue), 100);
 
-  const xScale = (index: number) => margin.left + (index / (data.length - 1)) * innerWidth;
-  const yOccupancyScale = (value: number) => margin.top + innerHeight - (value / maxOccupancy) * innerHeight;
-  const yRevenueScale = (value: number) => margin.top + innerHeight - (value / maxRevenue) * innerHeight;
+  const xScale = (i: number) => margin.left + (i / Math.max(data.length - 1, 1)) * innerWidth;
+  const yOcc = (v: number) => margin.top + innerHeight - (v / maxOccupancy) * innerHeight;
+  const yRev = (v: number) => margin.top + innerHeight - (v / maxRevenue) * innerHeight;
 
-  const occupancyPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xScale(i)},${yOccupancyScale(d.occupancy)}`).join(' ');
-  const revenuePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xScale(i)},${yRevenueScale(d.revenue)}`).join(' ');
+  const occPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xScale(i)},${yOcc(d.occupancy)}`).join(' ');
+  const revPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xScale(i)},${yRev(d.revenue)}`).join(' ');
 
-  const yOccupancyTicks = Array.from({ length: 5 }, (_, i) => Math.round((maxOccupancy / 4) * i));
-  const yRevenueTicks = Array.from({ length: 5 }, (_, i) => Math.round((maxRevenue / 4) * i));
+  // Aire de remplissage sous les courbes
+  const occArea = `${occPath} L${xScale(data.length - 1)},${margin.top + innerHeight} L${xScale(0)},${margin.top + innerHeight} Z`;
+  const revArea = `${revPath} L${xScale(data.length - 1)},${margin.top + innerHeight} L${xScale(0)},${margin.top + innerHeight} Z`;
 
+  // N'afficher les labels que pour janvier de chaque année + dernier point
+  const shouldShowLabel = (d: ChartData, i: number) =>
+    d.month.toLowerCase().includes('janv') || i === data.length - 1;
+
+  const yOccTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(maxOccupancy * f));
+  const yRevTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(maxRevenue * f));
 
   return (
-    <div className="relative">
-      <svg width="100%" viewBox={`0 0 ${width} ${height}`}>
-        {/* Y Axis for Occupancy */}
-        <g className="text-xs text-slate-500">
-          {yOccupancyTicks.map(tickValue => (
-            <g key={`y-occ-${tickValue}`} transform={`translate(0, ${yOccupancyScale(tickValue)})`}>
-              <line x1={margin.left} x2={width - margin.right} stroke="#e2e8f0" strokeWidth="1" />
-              <text x={margin.left - 8} dy="0.32em" textAnchor="end" fill="#0ea5e9">
-                {tickValue}
-              </text>
-            </g>
-          ))}
-          <text transform={`translate(${margin.left-40}, ${height/2}) rotate(-90)`} textAnchor="middle" fill="#0ea5e9" className="font-semibold">
-            Boxes occupés
-          </text>
-        </g>
-        
-        {/* Y Axis for Revenue */}
-         <g className="text-xs text-slate-500">
-          {yRevenueTicks.map(tickValue => (
-            <g key={`y-rev-${tickValue}`} transform={`translate(0, ${yRevenueScale(tickValue)})`}>
-               <text x={width - margin.right + 8} dy="0.32em" textAnchor="start" fill="#10b981">
-                {tickValue}€
-              </text>
-            </g>
-          ))}
-          <text transform={`translate(${width - margin.right + 45}, ${height/2}) rotate(-90)`} textAnchor="middle" fill="#10b981" className="font-semibold">
-            Revenu (€)
-          </text>
-        </g>
+    <div className="relative select-none">
+      <svg width="100%" viewBox={`0 0 ${width} ${height}`} onMouseLeave={() => setTooltip(null)}>
+        <defs>
+          <linearGradient id="occGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
 
-        {/* X Axis */}
-        <g className="text-xs text-slate-500" transform={`translate(0, ${height - margin.bottom})`}>
-             <line x1={margin.left} x2={width - margin.right} y1="0" y2="0" stroke="#94a3b8" strokeWidth="1" />
-            {data.map((d, i) => (
-              <text key={d.month} x={xScale(i)} y="20" textAnchor="middle" transform={`rotate(30, ${xScale(i)}, 25)`}>
-                {d.month}
-              </text>
-            ))}
-        </g>
-
-        {/* Lines */}
-        <path d={occupancyPath} fill="none" stroke="#0ea5e9" strokeWidth="2.5" />
-        <path d={revenuePath} fill="none" stroke="#10b981" strokeWidth="2.5" />
-        
-        {/* Points */}
-        {data.map((d, i) => (
-            <g key={`points-${i}`}>
-                 <circle cx={xScale(i)} cy={yOccupancyScale(d.occupancy)} r="4" fill="#0ea5e9" className="cursor-pointer" />
-                 <circle cx={xScale(i)} cy={yRevenueScale(d.revenue)} r="4" fill="#10b981" className="cursor-pointer" />
-            </g>
+        {/* Grilles horizontales */}
+        {yOccTicks.map(v => (
+          <line
+            key={`grid-${v}`}
+            x1={margin.left} x2={width - margin.right}
+            y1={yOcc(v)} y2={yOcc(v)}
+            stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,3"
+          />
         ))}
+
+        {/* Graduations Y gauche — occupation */}
+        {yOccTicks.map(v => (
+          <text key={`yocc-${v}`} x={margin.left - 10} y={yOcc(v)} dy="0.35em"
+            textAnchor="end" fontSize="11" fill="#0ea5e9" fontWeight="500">
+            {v}
+          </text>
+        ))}
+        <text transform={`translate(18, ${height / 2}) rotate(-90)`}
+          textAnchor="middle" fontSize="11" fill="#0ea5e9" fontWeight="600">
+          Boxes occupés
+        </text>
+
+        {/* Graduations Y droite — revenus */}
+        {yRevTicks.map(v => (
+          <text key={`yrev-${v}`} x={width - margin.right + 10} y={yRev(v)} dy="0.35em"
+            textAnchor="start" fontSize="11" fill="#10b981" fontWeight="500">
+            {v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k€` : `${v}€`}
+          </text>
+        ))}
+        <text transform={`translate(${width - 16}, ${height / 2}) rotate(90)`}
+          textAnchor="middle" fontSize="11" fill="#10b981" fontWeight="600">
+          Revenu (€)
+        </text>
+
+        {/* Aires de remplissage */}
+        <path d={occArea} fill="url(#occGrad)" />
+        <path d={revArea} fill="url(#revGrad)" />
+
+        {/* Lignes */}
+        <path d={occPath} fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={revPath} fill="none" stroke="#10b981" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Axe X + labels (seulement janvier de chaque année + dernier point) */}
+        <line x1={margin.left} x2={width - margin.right} y1={margin.top + innerHeight} y2={margin.top + innerHeight}
+          stroke="#cbd5e1" strokeWidth="1" />
+        {data.map((d, i) => {
+          const x = xScale(i);
+          const showLabel = shouldShowLabel(d, i);
+          return (
+            <g key={`x-${i}`}>
+              {/* Tick mark pour chaque mois */}
+              <line x1={x} x2={x} y1={margin.top + innerHeight} y2={margin.top + innerHeight + (showLabel ? 8 : 4)}
+                stroke={showLabel ? '#64748b' : '#cbd5e1'} strokeWidth="1" />
+              {showLabel && (
+                <text
+                  x={x} y={margin.top + innerHeight + 20}
+                  textAnchor="middle" fontSize="12" fill="#475569" fontWeight="600"
+                >
+                  {/* Pour janvier: afficher l'année; pour le dernier point: afficher mois+année */}
+                  {d.month.toLowerCase().includes('janv') && !d.month.includes(new Date().getFullYear().toString().slice(-2))
+                    ? d.month.replace('janv.', '').trim().replace(/^(\d+)$/, "20$1")
+                    : d.month}
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Zone interactive pour tooltip */}
+        {data.map((d, i) => (
+          <rect
+            key={`hover-${i}`}
+            x={xScale(i) - (innerWidth / data.length) / 2}
+            y={margin.top}
+            width={innerWidth / data.length}
+            height={innerHeight}
+            fill="transparent"
+            onMouseEnter={(e) => {
+              const svgRect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
+              setTooltip({ x: xScale(i), y: Math.min(yOcc(d.occupancy), yRev(d.revenue)) - 10, d });
+            }}
+          />
+        ))}
+
+        {/* Points visibles uniquement sur les points "label" */}
+        {data.map((d, i) => shouldShowLabel(d, i) && (
+          <g key={`pt-${i}`}>
+            <circle cx={xScale(i)} cy={yOcc(d.occupancy)} r="3.5" fill="#0ea5e9" stroke="white" strokeWidth="1.5" />
+            <circle cx={xScale(i)} cy={yRev(d.revenue)} r="3.5" fill="#10b981" stroke="white" strokeWidth="1.5" />
+          </g>
+        ))}
+
+        {/* Tooltip */}
+        {tooltip && (() => {
+          const tx = Math.min(Math.max(tooltip.x, 80), width - 130);
+          const ty = Math.max(tooltip.y - 55, margin.top);
+          return (
+            <g>
+              <rect x={tx - 60} y={ty} width="130" height="60" rx="6" fill="#1e293b" opacity="0.9" />
+              <text x={tx + 5} y={ty + 16} textAnchor="middle" fontSize="11" fill="white" fontWeight="600">{tooltip.d.month}</text>
+              <text x={tx + 5} y={ty + 32} textAnchor="middle" fontSize="11" fill="#7dd3fc">
+                {tooltip.d.occupancy} box{tooltip.d.occupancy > 1 ? 'es' : ''} occupé{tooltip.d.occupancy > 1 ? 'es' : ''}
+              </text>
+              <text x={tx + 5} y={ty + 48} textAnchor="middle" fontSize="11" fill="#6ee7b7">
+                {tooltip.d.revenue.toFixed(0)} €
+              </text>
+            </g>
+          );
+        })()}
       </svg>
-      <div className="flex justify-center items-center space-x-6 mt-4 text-sm">
-        <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-[#0ea5e9] mr-2"></div>
-            <span>Occupation</span>
+
+      <div className="flex justify-center items-center gap-8 mt-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-0.5 bg-sky-500 rounded" />
+          <span>Boxes occupés</span>
         </div>
-        <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-[#10b981] mr-2"></div>
-            <span>Revenu</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+          <span>Revenu mensuel (€)</span>
         </div>
       </div>
     </div>

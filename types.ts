@@ -54,8 +54,14 @@ export interface WorkHistoryItem {
 
 export interface Box {
   id: string;
+  immLot?: string;
+  codeImmeuble?: string;
   size: string;
   price: number;
+  assuranceMontant?: number;
+  tvaApplicable?: boolean;
+  tvaTaux?: number;
+  typeLoyer?: string;
   status: BoxStatus;
   side: BoxSide;
   level: BoxLevel;
@@ -84,8 +90,10 @@ export interface Tenant {
   insuranceInfo: string;
   insuranceImageUrl?: string;
   doorCode: string;
+  codeLocataire?: string;
   agentId: string;
   rentedBoxes: { boxId: string; price: number }[];
+  assuranceMontant?: number;
   startDate: string;
   endDate?: string | null;
   potentialEndDate: string;

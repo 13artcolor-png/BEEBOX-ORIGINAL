@@ -244,6 +244,21 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
                         <div className="text-xs text-slate-400 mt-1">
                             Échéance: {safeFormatDate(tenant.nextDueDate)}
                         </div>
+                        {tenant.unpaidRent > 0 && (
+                            <div className="text-xs text-red-600 font-medium mt-0.5">
+                                {tenant.unpaidRent.toFixed(2)} € de déficit
+                            </div>
+                        )}
+                        {(() => {
+                            if (!tenant.nextDueDate) return null;
+                            const daysLate = Math.floor((Date.now() - new Date(tenant.nextDueDate).getTime()) / 86400000);
+                            if (daysLate <= 0) return null;
+                            return (
+                                <div className="text-xs text-red-500 mt-0.5">
+                                    {daysLate} jour{daysLate > 1 ? 's' : ''} de retard
+                                </div>
+                            );
+                        })()}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{tenant.rentedBoxes.map(rb => `#${rb.boxId}`).join(', ')}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{safeFormatDate(tenant.startDate)}</td>

@@ -1,0 +1,63 @@
+﻿Facture N°;Date Facture;Rubrique;Ref Loc;Bailleur;Nom Locataire;Adresse Bien;Loyer (€);Date Effet;Mandat N°;Prestation;HT (€);TVA (%);TVA (€);TTC (€);Fichier
+2023-277;12/10/2023;927;13 BIS / AMANDINE;SCI 13 BIS;Societé AMANDINE;;82,50;09/10/2023;1364;Honoraires visite, dossier et rédaction de bail;29,17;20,00;8,33;50,00;Facture 2023-277 Loc SCI 13 BIS - AMANDINE.pdf
+2023-278;13/10/2023;928;SCI 13 BIS / HARANT;SCI 13 BIS;Madame Alexia HARANT;;90,00;21/08/2023;1272;Honoraires visite, dossier et rédaction de bail;29,17;20,00;8,33;50,00;Facture 2023-278 Loc SCI 13 BIS - HARANT.pdf
+2024-26;23/01/2024;989;13 BIS VANACKER;SCI 13 BIS;Madame Nathalie VANACKER;;80,00;24/01/2024;1475;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (32).pdf
+2024-28;24/01/2024;991;13 BIS POULIN;SCI 13 BIS;Madame Axellane POULIN;;90,00;26/01/2024;1477;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (31).pdf
+2024-56;23/02/2024;1007;BEE BOX SAS OMEGA PRODUCTION;SCI BEE BOX SAS OMEGA PRODUCTION;SAS OMEGA PRODUCTION;;332,00;26/02/2024;1511;Honoraires visite, dossier et rédaction de bail;83,33;20,00;16,67;100,00;facturesfournisseurs 2024 (30).pdf
+2024-58;26/02/2024;1011;13 BIS MARTIGNY;SCI 13 BIS;Madame Clotilde MARTIGNY;;90,00;23/02/2024;1529;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (29).pdf
+2024-77;21/03/2024;1033;13 BIS IANNELLI;SCI 13 BIS;Madame Anna IANNELLI;;90,00;20/03/2024;1564;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (27).pdf
+2024-78;21/03/2024;1034;13 BIS BRES;SCI 13 BIS;Monsieur Jean-Sébastien BRES;;170,00;19/03/2024;1565;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (28).pdf
+2024-130;14/05/2024;1074;13 BIS COUSIN;SCI 13 BIS;Monsieur Sébastien COUSIN;;90,00;01/05/2024;1613;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (25).pdf
+2024-131;14/05/2024;1075;13 BIS DECROUY;sCI 13 BIS;Monsieur Jean-Paul DECROUY;;90,00;14/05/2024;1633;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (24).pdf
+2024-132;14/05/2024;1076;13 bis ARNAUD;SCI 13 bis;Monsieur Gérard ARNAUD;;90,00;01/05/2024;1634;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (26).pdf
+2024-134;21/05/2024;1080;13 BIS CHALENDAR;SCI 13 BIS;Monsieur Pascal CHALENDAR;;90,00;17/05/2024;1639;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (23).pdf
+2024-148;23/05/2024;1087;13 BIS COTTE;SCI 13 BIS;Monsieur Jean-Pierre COTTE;;290,00;24/05/2024;1649;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (22).pdf
+2024-154;05/06/2024;1097;13 BIS LAVANCIER;SCI 13 BIS;Madame Florence LAVANCIER;;90,00;07/06/2024;1670;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (20).pdf
+2024-172;07/06/2024;1101;13 BIS SABATIER;SCI 13 BIS;Monsieur Fabrice SABATIER;;90,00;07/06/2024;1675;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (21).pdf
+2024-234;11/07/2024;1135;13 BIS DRZYSTEK;SCI 13 BIS;Madame Fabienne DRZYSTEK;;90,00;17/07/2024;1742;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (18).pdf
+2024-235;11/07/2024;1136;13 BIS POYART;SCI 13 BIS;Monsieur Gilles POYART;;140,00;16/07/2024;1731;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (19).pdf
+2024-264;24/07/2024;1155;13 BIS SEDIVY;SCI 13 BIS;Monsieur Paul SEDIVY;;90,00;23/07/2024;1750;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (17).pdf
+2024-305;14/08/2024;1176;13 bis MULLER;SCI 13 bis;Monsieur François MULLER;;90,00;30/08/2024;1770;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (13).pdf
+2024-306;14/08/2024;1177;13 bis YONGXIAO;SCI 13 bis;Monsieur Jin YONGXIAO;;90,00;01/09/2024;1775;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (15).pdf
+2024-307;14/08/2024;1178;SCI 13 BIS DIEUSEUL;SCI 13 BIS;Monsieur Cherestal  DIEUSEUL;;350,00;12/08/2024;1776;Honoraires visite, dossier et rédaction de bail;83,33;20,00;16,67;100,00;facturesfournisseurs 2024 (14).pdf
+2024-314;20/08/2024;1185;13 BIS BIERNAT;SCI 13 BIS;Madame Arlette BIERNAT;;140,00;20/08/2024;1785;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (12).pdf
+2024-323;22/08/2024;1190;13 BIS SARL SLEC AUDIT;SCI 13 BIS;SARL SLEC AUDIT;;90,00;22/08/2024;1787;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (16).pdf
+2024-345;04/09/2024;1201;13 BIS MICHAUX-BOUTEL;SCI 13 BIS;Madame Isabelle MICHAUX-BOUTEL;;90,00;28/08/2024;1791;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (10).pdf
+2024-346;04/09/2024;1202;13 BIS PIERRE;SCI 13 BIS;Monsieur Pascal PIERRE;;90,00;28/08/2024;1792;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (11).pdf
+2024-383;14/10/2024;1218;13 BIS SAS LA GRANDE PHARMACIE;SCI 13 BIS;SAS LA GRANDE PHARMACIE;;90,00;26/09/2024;1829;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (9).pdf
+2024-388;17/10/2024;1224;13 BIS DIEU;SCI 13 BIS;Madame Hélène DIEU;;80,00;29/10/2024;1856;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (8).pdf
+2024-405;23/10/2024;1231;13 BIS LEMAIRE;SCI 13 BIS;Monsieur Laurent LEMAIRE;;90,00;22/10/2024;1857;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (7).pdf
+2024-441;18/11/2024;1247;13 BIS DE LIBERO;SCI 13 BIS;Madame Camille DE LIBERO;;90,00;20/11/2024;1872;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (5).pdf
+2024-442;18/11/2024;1248;13 bis BURLION;SCI 13 bis;Monsieur Jean-Philippe BURLION;;90,00;29/11/2024;1875;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (6).pdf
+2024-445;25/11/2024;1251;13 BIS FAULIN;SCI 13 BIS;Monsieur Richard FAULIN;;90,00;25/11/2024;1886;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (4).pdf
+2024-461;06/12/2024;1260;13 BIS VANACKER;SCI 13 BIS;Madame Nathalie VANACKER;;170,00;29/11/2024;1890;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (1).pdf
+2024-462;06/12/2024;;;SCI 13 BIS;Monsieur Laurent VERON;;90,00;09/12/2024;1892;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (2).pdf
+2024-463;06/12/2024;1262;SCI 13 BIS CHENU;SCI 13 BIS;Monsieur Thomas CHENU;;;04/12/2024;1893;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;facturesfournisseurs 2024 (3).pdf
+2025-88;19/03/2025;1340;13 BIS USCIDDA;SCI 13 BIS;Monsieur Jonathan USCIDDA;;90,00;06/03/2025;2011;;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (27).pdf
+2025-89;19/03/2025;1341;13 BIS PAIN;SCI 13 BIS;Madame Cindy PAIN;;;11/03/2025;;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50;factures fournisseurs 2025 (25).pdf
+2025-90;19/03/2025;1342;13 BIS HAVEL;;Madame Isabelle HAVEL;;90,00;17/03/2025;2013;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (26).pdf
+2025-96;21/03/2025;1346;13 BIS PLOMION;SCI 13 BIS;Madame Magali PLOMION;;170,00;20/03/2025;2023;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (24).pdf
+2025-119;09/04/2025;1365;13 BIS ALBERS;SCI 13 BIS;Madame Aude ALBERS;;190,00;07/05/2025;2037;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (22).pdf
+2025-124;18/04/2025;1371;ANDRE PINEL;SCI 13 BIS;Monsieur Sébastien PINEL;;170,00;25/04/2025;2058;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (23).pdf
+2025-150;15/05/2025;1389;13 BIS GERARD;SCI 13 BIS;Madame Léa GERARD;;90,00;12/05/2025;2089;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (20).pdf
+2025-151;15/05/2025;1390;13 BIS BIOTTEAU;SCI 13 BIS;Monsieur Rodolphe BIOTTEAU;;170,00;15/05/2025;2099;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (19).pdf
+2025-206;06/06/2025;1408;13 BIS RIGAUD;SCI 13 BIS;Monsieur Pascal RIGAUD;;90,00;;2110;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (18).pdf
+2025-230;23/06/2025;1432;13 BIS CAPPELLE-DIEU;SCI 13 BIS;Madame Charlotte CAPPELLE-DIEU;;80,00;01/07/2025;2154;;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (17).pdf
+2025-252;17/07/2025;1450;13 BIS PINEL;SCI 13 BIS;Monsieur Victorin PINEL;;90,00;07/07/2025;2166;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (16).pdf
+2025-253;17/07/2025;1451;13 BIS POINT;SCI 13 BIS;Monsieur Pascal POINT;;90,00;01/08/2025;2181;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (15).pdf
+2025-283;08/08/2025;1467;13 BIS GRATIA;SCI 13 BIS;Monsieur Richard GRATIA;;190,00;25/08/2025;2201;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (10).pdf
+2025-284;08/08/2025;1468;13 BIS GERMAIN;SCI 13 BIS;Monsieur Julien GERMAIN;;90,00;;2212;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (11).pdf
+2025-285;08/08/2025;1469;13 BIS / CERF;;Madame Karine CERF;;70,00;01/08/2025;2193;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (14).pdf
+2025-298;08/08/2025;1477;13 BIS REN;SCI 13 BIS;Monsieur Cyril REN;;90,00;01/09/2025;2202;;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (9).pdf
+2025-307;11/08/2025;1484;13 BIS FRANCHETEAU;SCI 13 BIS;Monsieur Vincent FRANCHETEAU;;190,00;;2188;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (13).pdf
+2025-312;18/08/2025;1491;13 BIS BOUDRY;;Madame Hélène BOUDRY;;390,00;19/08/2025;2227;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (12).pdf
+2025-364;03/10/2025;;;SCI 13 BIS;Monsieur Yann LEGRAND;;140,00;07/11/2025;;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (4).pdf
+2025-385;16/10/2025;1532;13 BIS JONNEAUX;SCI 13 BIS;Monsieur Hervé JONNEAUX;;90,00;02/10/2025;2288;;41,67;20,00;8,33;50;factures fournisseurs 2025 (8).pdf
+2025-386;16/10/2025;1533;13 BIS LOITIERE;SCI 13 BIS;Madame Christel LOITIERE;;;02/10/2025;2289;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (6).pdf
+2025-387;16/10/2025;1534;13 BIS DEBRAY;SCI 13 BIS;Madame Delphine DEBRAY;;90,00;10/10/2025;2290;Honoraires vlsite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (7).pdf
+2025-404;24/10/2025;;;SCI 13 BIS;Monsieur Boris DESCOBERT;;90,00;;2316;Honoraires visite, dossier et rédaction de ball;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (5).pdf
+2025-444;03/12/2025;1569;13 BIS CHOWANEK;SCI 13 BIS;Madame Martine CHOWANEK;;90,00;18/11/2025;2359;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (2).pdf
+2025-447;03/12/2025;1571;13 BIS POITRINE;SCI 13 BIS;Monsieur Cyril POITRINE;;190,00;23/11/2025;2360;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (3).pdf
+2025-461;12/12/2025;1578;13 BIS HARLAY;SCI 13 BIS;Madame Céline HARLAY;;90,00;09/12/2025;2364;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;factures fournisseurs 2025 (1).pdf
+2026-51;10/02/2026;1616;13 BIS JANKIN;;Monsieur Thomas JANKIN;;170,00;09/02/2026;2425;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50;factures fournisseurs (2).pdf
+2026-54;10/02/2026;1618;13 BIS HOMEBOX;SCI 13 BIS;Société HOMEBOX;;90,00;16/02/2026;2424;Honoraires visite, dossier et rédaction de bail;41,67;20,00;8,33;50,00;document (15).pdf
