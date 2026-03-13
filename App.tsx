@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth, useBoxes, useTenants, useAgencies, useData, useUI } from './contexts';
 import { db, logActivity } from './services/firebase';
 import { UserRole, PaymentStatus } from './types';
@@ -10,6 +10,7 @@ import BoxesPage from './pages/BoxesPage';
 import TenantsPage from './pages/TenantsPage';
 import AgencyPage from './pages/AgencyPage';
 import DataPage from './pages/DataPage';
+import HelpPage from './pages/HelpPage';
 import CalendarPage from './pages/CalendarPage';
 import FinancesPage from './pages/FinancesPage';
 import ChatBot from './components/ChatBot';
@@ -18,7 +19,7 @@ import EditTenantModal from './components/EditTenantModal';
 import BoxDetailModal from './components/BoxDetailModal';
 import BoxHistoryModal from './components/BoxHistoryModal';
 import ConfirmationModal from './components/ConfirmationModal';
-import { sendPaymentReminder } from './services/notificationService';
+import { sendPaymentReminder, sendDocumentsToTenant } from './services/notificationService';
 
 // Import mock data functions
 import {
@@ -41,7 +42,9 @@ const VideoManagerModal: React.FC<{
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
   const [title, setTitle] = React.useState('');
-  const [url, setUrl] = React.useState('');
+  const [file, setFile] = React.useState<File | null>(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
   const { guidedVideos, addGuidedVideo, deleteGuidedVideo, isSaving: dataIsSaving } = useData();
   const { appUser } = useAuth();
   const { showConfirmation } = useUI();
@@ -50,16 +53,33 @@ const VideoManagerModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !url) {
-      alert('Veuillez fournir un titre et une URL pour la vidéo.');
+    if (!title || !file) {
+      alert('Veuillez fournir un titre et sélectionner un fichier vidéo.');
       return;
     }
+    setUploading(true);
+    setUploadProgress(0);
     try {
-      await addGuidedVideo(title, url, appUser.name, appUser.role);
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const ref = storage.ref(`videos/${fileName}`);
+      const uploadTask = ref.put(file);
+      await new Promise<void>((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snap: any) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+          (err: any) => reject(err),
+          () => resolve()
+        );
+      });
+      const downloadUrl = await ref.getDownloadURL();
+      await addGuidedVideo(title, downloadUrl, appUser.name, appUser.role);
       setTitle('');
-      setUrl('');
-    } catch (error) {
-      // Error handled in context
+      setFile(null);
+      setUploadProgress(0);
+    } catch (error: any) {
+      alert(`Erreur lors de l'upload : ${error.message || 'inconnue'}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -109,25 +129,33 @@ const VideoManagerModal: React.FC<{
                 />
               </div>
               <div>
-                <label htmlFor="video-url" className="text-sm font-medium text-slate-700">
-                  URL de la vidéo
+                <label htmlFor="video-file" className="text-sm font-medium text-slate-700">
+                  Fichier vidéo (MP4, MOV, AVI...)
                 </label>
                 <input
-                  id="video-url"
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://votre-cloud.com/video.mp4"
+                  id="video-file"
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
                   required
-                  className="w-full px-3 py-2 border rounded-md mt-1"
+                  className="block w-full mt-1 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                {file && <p className="text-xs text-slate-500 mt-1">{file.name} — {(file.size / 1024 / 1024).toFixed(1)} Mo</p>}
               </div>
+              {uploading && (
+                <div>
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 text-center">Upload en cours... {uploadProgress}%</p>
+                </div>
+              )}
               <button
                 type="submit"
-                disabled={dataIsSaving || !title || !url}
+                disabled={uploading || dataIsSaving || !title || !file}
                 className="w-full bg-blue-600 text-white py-2.5 rounded-md hover:bg-blue-700 disabled:bg-blue-300 transition-colors font-semibold"
               >
-                {dataIsSaving ? 'Ajout en cours...' : 'Ajouter la vidéo'}
+                {uploading ? `Upload en cours... ${uploadProgress}%` : 'Téléverser et ajouter'}
               </button>
             </form>
           )}
@@ -177,7 +205,7 @@ function App() {
   // Context hooks
   const { appUser, logout, loading: authLoading } = useAuth();
   const { boxes, updateBoxDetails, dataLoaded: boxesLoaded, isSaving: boxesIsSaving } = useBoxes();
-  const { tenants, saveTenant, updateTenant, releaseTenant, dataLoaded: tenantsLoaded, isSaving: tenantsIsSaving } = useTenants();
+  const { tenants, saveTenant, reassignTenant, updateTenant, releaseTenant, deleteTenant, dataLoaded: tenantsLoaded, isSaving: tenantsIsSaving } = useTenants();
   const { agencies, agents, addAgency, updateAgency, deleteAgency, addAgent, updateAgent, deleteAgent, canDeleteAgency, canDeleteAgent, dataLoaded: agenciesLoaded, isSaving: agenciesIsSaving } = useAgencies();
   const { adminUser, activityLogs, updateAdminProfile, dataLoaded: dataLoaded, isSaving: dataIsSaving } = useData();
   const {
@@ -210,6 +238,14 @@ function App() {
 
   const allDataLoaded = boxesLoaded && tenantsLoaded && agenciesLoaded && dataLoaded;
   const anySaving = boxesIsSaving || tenantsIsSaving || agenciesIsSaving || dataIsSaving;
+
+  // Documents légaux (règlement intérieur + mandat)
+  const [docUrls, setDocUrls] = useState<{ reglementUrl: string; mandatUrl: string }>({ reglementUrl: '', mandatUrl: '' });
+  useEffect(() => {
+    db.collection('settings').doc('documents').get().then((snap: any) => {
+      if (snap.exists) setDocUrls(snap.data());
+    }).catch(() => {});
+  }, []);
 
   // Check payment statuses (business logic that should eventually move to Cloud Function)
   useEffect(() => {
@@ -337,6 +373,31 @@ function App() {
     }
   };
 
+  const handleReassignTenant = async (tenantId: string, boxId: string, startDate: string, workData: any) => {
+    if (!appUser) return;
+    const boxToRent = boxes.find((b) => b.id === boxId);
+    if (!boxToRent) {
+      alert('Erreur: Le box sélectionné est introuvable.');
+      return;
+    }
+    try {
+      await reassignTenant(
+        tenantId,
+        boxId,
+        boxToRent.price,
+        startDate,
+        workData,
+        appUser.name,
+        appUser.role,
+        appUser.agentId,
+        adminUser?.email || null
+      );
+      closeTenantModal();
+    } catch (error) {
+      console.error('Error reassigning tenant:', error);
+    }
+  };
+
   const handleUpdateTenant = async (updatedTenant: any, files: any) => {
     if (!appUser) return;
     try {
@@ -382,9 +443,17 @@ function App() {
     }
   };
 
-  const handleSendReminder = (tenant: any) => {
+  const handleSendReminder = (tenantId: string) => {
     if (!adminUser) return;
+    const tenant = tenants.find(t => t.id === tenantId);
+    if (!tenant) return;
     sendPaymentReminder(tenant, adminUser.email);
+  };
+
+  const handleSendDocuments = (tenantId: string) => {
+    const tenant = tenants.find(t => t.id === tenantId);
+    if (!tenant) return;
+    sendDocumentsToTenant(tenant, docUrls.reglementUrl || undefined, docUrls.mandatUrl || undefined);
   };
 
   const handleAddAgent = async (agentData: any) => {
@@ -620,8 +689,12 @@ function App() {
             currentUserRole={appUser.role}
             currentAgentId={appUser.agentId}
             onSendReminder={handleSendReminder}
+            onSendDocuments={handleSendDocuments}
+            documentUrls={docUrls}
+            bailleurNom={adminUser?.name || 'Propriétaire'}
             onAddTenant={() => openTenantModal()}
             onEditTenant={openEditTenantModal}
+            onDeleteTenant={(tenantId) => deleteTenant(tenantId, appUser.name, appUser.role)}
           />
         );
       case 'agency':
@@ -660,7 +733,9 @@ function App() {
         );
       case 'calendar':
         if (appUser.role !== UserRole.Admin) return null;
-        return <CalendarPage logs={activityLogs} />;
+        return <CalendarPage logs={activityLogs} agents={agents} onDeleteLog={async (id) => { await db.collection('activityLogs').doc(id).delete(); }} />;
+      case 'help':
+        return <HelpPage currentUserRole={appUser.role} />;
       default:
         return (
           <BoxesPage
@@ -694,9 +769,11 @@ function App() {
         <AddTenantModal
           box={selectedBox}
           allBoxes={boxes}
+          tenants={tenants}
           agentId={appUser.agentId || ''}
           onClose={closeTenantModal}
           onSave={handleSaveTenant}
+          onReassign={handleReassignTenant}
           onShowHistory={handleShowHistory}
         />
       )}

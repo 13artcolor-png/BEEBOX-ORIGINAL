@@ -172,10 +172,21 @@ export const AgenciesProvider: React.FC<AgenciesProviderProps> = ({ children }) 
 
       // WARNING: This should be done via Cloud Functions in production
       console.warn('Simulation de la création d\'un utilisateur Auth depuis le client. NE PAS UTILISER EN PRODUCTION.');
-      const tempUserCredential = await auth.createUserWithEmailAndPassword(agentInfo.email, password);
-      await tempUserCredential.user.sendEmailVerification();
-      await auth.signOut();
-      console.log(`Utilisateur Auth créé pour ${agentInfo.email}. L'admin doit se reconnecter.`);
+      let authAlreadyExisted = false;
+      try {
+        const tempUserCredential = await auth.createUserWithEmailAndPassword(agentInfo.email, password);
+        await tempUserCredential.user.sendEmailVerification();
+        await auth.signOut();
+        console.log(`Utilisateur Auth créé pour ${agentInfo.email}. L'admin doit se reconnecter.`);
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-in-use') {
+          // Le compte Auth existe déjà (tentative précédente) — on continue la sauvegarde Firestore
+          authAlreadyExisted = true;
+          console.warn(`Compte Auth déjà existant pour ${agentInfo.email}. Sauvegarde Firestore uniquement.`);
+        } else {
+          throw authError;
+        }
+      }
 
       const newAgentId = (
         agents.length > 0 ? Math.max(...agents.map((a) => parseInt(a.id))) + 1 : 1
@@ -192,7 +203,11 @@ export const AgenciesProvider: React.FC<AgenciesProviderProps> = ({ children }) 
         );
       }
 
-      alert('Agent créé avec succès. Pour des raisons de sécurité, vous avez été déconnecté. Veuillez vous reconnecter.');
+      if (authAlreadyExisted) {
+        alert('Agent créé avec succès. (Le compte de connexion existait déjà.) Pour des raisons de sécurité, vous avez été déconnecté. Veuillez vous reconnecter.');
+      } else {
+        alert('Agent créé avec succès. Pour des raisons de sécurité, vous avez été déconnecté. Veuillez vous reconnecter.');
+      }
     } catch (error: any) {
       console.error("Erreur lors de l'ajout de l'agent:", error);
       alert(`Une erreur s'est produite: ${error.message}`);

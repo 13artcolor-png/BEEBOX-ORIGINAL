@@ -126,6 +126,9 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onSa
              <div>
                 <InputField label="Montant assurance (€)" name="assuranceMontant" type="number" value={formData.assuranceMontant?.toString() || ''} onChange={(e) => setFormData(prev => ({ ...prev, assuranceMontant: e.target.value !== '' ? parseFloat(e.target.value) : undefined }))} />
              </div>
+             <div>
+                <InputField label="Expiration assurance" name="insuranceExpiryDate" type="date" value={formData.insuranceExpiryDate || ''} onChange={handleChange} />
+             </div>
             <InputField label="Date de sortie potentielle" name="potentialEndDate" type="date" value={formData.potentialEndDate} onChange={handleChange} />
             {isAdmin && (
               <>

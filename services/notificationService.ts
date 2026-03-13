@@ -1,5 +1,5 @@
 import emailjs from '@emailjs/browser';
-import { AdminUser, Tenant } from '../types';
+import { Tenant } from '../types';
 
 // Clés EmailJS - à configurer dans le fichier .env
 const PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '';
@@ -43,31 +43,83 @@ export async function sendEmailNotification(toEmail: string, subject: string, bo
 
 /**
  * Envoie un rappel de paiement au locataire.
+ * Ouvre le client email avec un message pré-rempli (mailto:).
+ * Si EmailJS est configuré, envoie aussi via EmailJS.
  */
-export function sendPaymentReminder(tenant: Tenant, admin: AdminUser): void {
+export function sendPaymentReminder(tenant: Tenant, adminEmail: string): void {
   const dueDate = tenant.nextDueDate
     ? new Date(tenant.nextDueDate).toLocaleDateString('fr-FR')
-    : 'inconnue';
-  const totalRent = tenant.rentedBoxes.reduce((acc, box) => acc + box.price, 0) + tenant.unpaidRent;
+    : 'à échéance';
+  const monthlyRent = tenant.rentedBoxes.reduce((acc, box) => acc + box.price, 0);
+  const totalDue = monthlyRent + tenant.unpaidRent;
+  const boxes = tenant.rentedBoxes.map(rb => `Box #${rb.boxId.replace('box-', '')}`).join(', ');
 
-  const subject = 'Rappel de Paiement de Loyer - BEEBOX LAON';
-  const body = `
-Cher/Chère ${tenant.firstName} ${tenant.lastName},
+  const subject = 'Rappel de paiement de loyer - BEEBOX LAON';
+  const bodyText = [
+    `Cher/Chère ${tenant.firstName} ${tenant.lastName},`,
+    '',
+    `Ceci est un rappel concernant le paiement de votre loyer pour ${boxes} chez BEEBOX LAON.`,
+    `Échéance : ${dueDate}`,
+    `Loyer mensuel : ${monthlyRent.toFixed(2)} €`,
+    tenant.unpaidRent > 0 ? `Impayés antérieurs : ${tenant.unpaidRent.toFixed(2)} €` : '',
+    `Total dû : ${totalDue.toFixed(2)} €`,
+    '',
+    'Veuillez procéder au paiement dès que possible pour éviter tout désagrément.',
+    'Si vous avez déjà effectué le paiement, veuillez ignorer ce message.',
+    '',
+    `Pour toute question, contactez-nous à ${adminEmail}.`,
+    '',
+    'Cordialement,',
+    'BEEBOX LAON',
+  ].filter(l => l !== undefined).join('\n');
 
-Ceci est un rappel concernant le paiement de votre loyer pour votre box de stockage chez BEEBOX LAON.
-Votre prochaine échéance est le ${dueDate}.
+  // Ouvrir le client email avec message pré-rempli
+  if (tenant.email) {
+    const mailtoUrl = `mailto:${tenant.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    window.open(mailtoUrl, '_blank');
+  } else {
+    alert(`Ce locataire (${tenant.firstName} ${tenant.lastName}) n'a pas d'adresse email renseignée.`);
+  }
 
-Montant dû : ${totalRent.toFixed(2)} €
+  // EmailJS en complément si configuré
+  if (PUBLIC_KEY && SERVICE_ID && TEMPLATE_ID) {
+    sendEmailNotification(tenant.email, subject, bodyText);
+  }
+}
 
-Veuillez procéder au paiement dès que possible pour éviter tout désagrément.
+/**
+ * Envoie le règlement intérieur et/ou le mandat au locataire.
+ * Ouvre le client email avec les liens de téléchargement dans le corps.
+ */
+export function sendDocumentsToTenant(tenant: Tenant, reglementUrl?: string, mandatUrl?: string): void {
+  if (!reglementUrl && !mandatUrl) {
+    alert("Aucun document uploadé. Allez dans Données & Admin → Administrateur pour uploader le règlement intérieur et le mandat.");
+    return;
+  }
+  if (!tenant.email) {
+    alert(`Ce locataire (${tenant.firstName} ${tenant.lastName}) n'a pas d'adresse email renseignée.`);
+    return;
+  }
 
-Si vous avez déjà effectué le paiement, veuillez ignorer ce message.
+  const boxes = tenant.rentedBoxes.map(rb => `Box #${rb.boxId.replace('box-', '')}`).join(', ');
+  const subject = 'Documents BEEBOX LAON - Règlement intérieur et mandat';
+  const lines = [
+    `Cher/Chère ${tenant.firstName} ${tenant.lastName},`,
+    '',
+    `Veuillez trouver ci-dessous les documents relatifs à votre location (${boxes}) chez BEEBOX LAON.`,
+    '',
+  ];
 
-Pour toute question, veuillez nous contacter à ${admin.email}.
+  if (reglementUrl) {
+    lines.push(`Règlement intérieur : ${reglementUrl}`);
+  }
+  if (mandatUrl) {
+    lines.push(`Mandat de location : ${mandatUrl}`);
+  }
 
-Cordialement,
-L'équipe de BEEBOX LAON
-  `.trim();
+  lines.push('', 'Cordialement,', 'BEEBOX LAON');
 
-  sendEmailNotification(tenant.email, subject, body);
+  const bodyText = lines.join('\n');
+  const mailtoUrl = `mailto:${tenant.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+  window.open(mailtoUrl, '_blank');
 }

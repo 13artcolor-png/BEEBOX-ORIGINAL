@@ -18,6 +18,17 @@ interface TenantsContextType {
     agentId: string | null,
     adminEmail: string | null
   ) => Promise<void>;
+  reassignTenant: (
+    tenantId: string,
+    boxId: string,
+    boxPrice: number,
+    startDate: string,
+    workData: { workToDo: string; workAlert: boolean },
+    userName: string,
+    userRole: UserRole,
+    agentId: string | null,
+    adminEmail: string | null
+  ) => Promise<void>;
   updateTenant: (
     updatedTenant: Tenant,
     files: { idImage: File | null; insuranceImage: File | null },
@@ -31,6 +42,11 @@ interface TenantsContextType {
     userName: string,
     userRole: UserRole,
     adminEmail: string | null
+  ) => Promise<void>;
+  deleteTenant: (
+    tenantId: string,
+    userName: string,
+    userRole: UserRole
   ) => Promise<void>;
 }
 
@@ -158,6 +174,55 @@ export const TenantsProvider: React.FC<TenantsProviderProps> = ({ children }) =>
     }
   };
 
+  const reassignTenant = async (
+    tenantId: string,
+    boxId: string,
+    boxPrice: number,
+    startDate: string,
+    workData: { workToDo: string; workAlert: boolean },
+    userName: string,
+    userRole: UserRole,
+    agentId: string | null,
+    adminEmail: string | null
+  ) => {
+    setIsSaving(true);
+    try {
+      const tenant = tenants.find((t) => t.id === tenantId);
+      if (!tenant) throw new Error('Locataire introuvable');
+
+      const nextDueDate = new Date(startDate);
+      nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+
+      const batch = db.batch();
+      batch.update(db.collection('tenants').doc(tenantId), {
+        endDate: null,
+        rentedBoxes: [{ boxId, price: boxPrice }],
+        startDate,
+        nextDueDate: nextDueDate.toISOString().split('T')[0],
+        paymentStatus: PaymentStatus.Paid,
+        unpaidRent: 0,
+        lastPaymentDate: startDate,
+      });
+      batch.update(db.collection('boxes').doc(boxId), {
+        status: BoxStatus.Occupied,
+        currentTenantId: tenantId,
+        rentedByAgentId: agentId,
+        workToDo: workData.workToDo,
+        workAlert: workData.workAlert,
+      });
+      await batch.commit();
+
+      const logMessage = `Réaffectation du locataire ${tenant.firstName} ${tenant.lastName} au box #${boxId} (réentrant).`;
+      await logActivity(userName, userRole, logMessage);
+      if (adminEmail) sendEmailNotification(adminEmail, 'Locataire Réaffecté', logMessage);
+    } catch (error) {
+      console.error('Erreur lors de la réaffectation:', error);
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const updateTenant = async (
     updatedTenant: Tenant,
     files: { idImage: File | null; insuranceImage: File | null },
@@ -249,13 +314,53 @@ export const TenantsProvider: React.FC<TenantsProviderProps> = ({ children }) =>
     }
   };
 
+  const deleteTenant = async (
+    tenantId: string,
+    userName: string,
+    userRole: UserRole
+  ) => {
+    setIsSaving(true);
+    try {
+      const tenant = tenants.find((t) => t.id === tenantId);
+      if (!tenant) return;
+
+      const batch = db.batch();
+
+      // Si le locataire est encore actif (pas de endDate), libérer ses boxes
+      if (!tenant.endDate && tenant.rentedBoxes.length > 0) {
+        for (const rb of tenant.rentedBoxes) {
+          batch.update(db.collection('boxes').doc(rb.boxId), {
+            status: BoxStatus.Vacant,
+            currentTenantId: null,
+            rentedByAgentId: null,
+            workToDo: '',
+            workAlert: false,
+          });
+        }
+      }
+
+      // Suppression définitive du document locataire
+      batch.delete(db.collection('tenants').doc(tenantId));
+      await batch.commit();
+
+      await logActivity(userName, userRole, `Suppression définitive du locataire ${tenant.firstName} ${tenant.lastName} (ID: ${tenantId}).`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression du locataire:', error);
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const value: TenantsContextType = {
     tenants,
     dataLoaded,
     isSaving,
     saveTenant,
+    reassignTenant,
     updateTenant,
     releaseTenant,
+    deleteTenant,
   };
 
   return <TenantsContext.Provider value={value}>{children}</TenantsContext.Provider>;

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Tenant, Agent, UserRole, Agency, PaymentStatus } from '../types';
+import { generateQuittanceLoyer } from '../services/pdfGenerator';
 
 type SortKey = keyof Tenant | 'lastName' | 'startDate' | 'endDate' | 'id';
 
@@ -12,8 +13,12 @@ interface TenantsPageProps {
   currentUserRole: UserRole;
   currentAgentId: string | null;
   onSendReminder: (tenantId: string) => void;
+  onSendDocuments: (tenantId: string) => void;
+  documentUrls: { reglementUrl: string; mandatUrl: string };
+  bailleurNom: string;
   onAddTenant: () => void;
   onEditTenant: (tenant: Tenant) => void;
+  onDeleteTenant: (tenantId: string) => void;
 }
 
 const safeFormatDate = (dateString: string | null | undefined): string => {
@@ -45,10 +50,14 @@ const SortableHeader: React.FC<{
 };
 
 
-const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, currentUserRole, currentAgentId, onSendReminder, onAddTenant, onEditTenant }) => {
+const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, currentUserRole, currentAgentId, onSendReminder, onSendDocuments, documentUrls, bailleurNom, onAddTenant, onEditTenant, onDeleteTenant }) => {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>({ key: 'id', direction: 'descending' });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  // Quittance : tenant sélectionné + période
+  const defaultPeriod = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const [quittanceTenantId, setQuittanceTenantId] = useState<string | null>(null);
+  const [quittancePeriod, setQuittancePeriod] = useState(defaultPeriod);
 
   // FIX: Explicitly type Maps to resolve 'unknown' type errors when accessing properties.
   const agentsMap = new Map<string, Agent>(agents.map(a => [a.id, a]));
@@ -119,6 +128,9 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
           return acc + rentedBox.price;
       }, 0);
 
+      // Locataire parti sans prix historique → on ne peut pas calculer
+      if (totalMonthlyPrice === 0) return { brut: 0, net: 0 };
+
       const brut = months > 0 ? months * totalMonthlyPrice : totalMonthlyPrice;
       
       const agent = agentsMap.get(tenant.agentId);
@@ -134,10 +146,7 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
 
   const handleEditClick = (e: React.MouseEvent, tenant: Tenant) => {
     e.preventDefault();
-    const canModify = currentUserRole === UserRole.Admin || currentAgentId === tenant.agentId;
-    if (canModify) {
-      onEditTenant(tenant);
-    }
+    onEditTenant(tenant);
   };
 
   const getStatusBadge = (status: PaymentStatus) => {
@@ -219,10 +228,10 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
                 <tbody className="divide-y divide-slate-200 bg-white">
                   {sortedTenants.map((tenant) => {
                     const { net } = currentUserRole === UserRole.Admin ? calculateRents(tenant) : { net: 0 };
-                    const canModify = currentUserRole === UserRole.Admin || currentAgentId === tenant.agentId;
                     const canSendReminder = currentUserRole === UserRole.Admin && (tenant.paymentStatus === PaymentStatus.Due || tenant.paymentStatus === PaymentStatus.Overdue);
                     return (
-                    <tr key={tenant.id} className="hover:bg-slate-50/70 transition-colors">
+                    <React.Fragment key={tenant.id}>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-slate-500 sm:pl-6">{tenant.id}</td>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
                          <div className="flex items-center">
@@ -241,6 +250,11 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(tenant.paymentStatus)}`}>
                             {tenant.paymentStatus}
                         </span>
+                        {tenant.paymentStatus === PaymentStatus.Due && !tenant.endDate && (
+                            <div className="text-xs text-yellow-700 font-semibold mt-1">
+                                {tenant.rentedBoxes.reduce((s, rb) => s + rb.price, 0).toFixed(0)} € à percevoir
+                            </div>
+                        )}
                         <div className="text-xs text-slate-400 mt-1">
                             Échéance: {safeFormatDate(tenant.nextDueDate)}
                         </div>
@@ -270,7 +284,7 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
                         </>
                       )}
                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-sm font-medium sm:pr-6 space-x-2">
-                        <a href="#" onClick={(e) => handleEditClick(e, tenant)} className={canModify ? "text-blue-600 hover:text-blue-900" : "text-gray-400 cursor-not-allowed"} aria-disabled={!canModify}>
+                        <a href="#" onClick={(e) => handleEditClick(e, tenant)} className="text-blue-600 hover:text-blue-900">
                           Modifier
                         </a>
                         {canSendReminder && (
@@ -278,8 +292,65 @@ const TenantsPage: React.FC<TenantsPageProps> = ({ tenants, agents, agencies, cu
                                 Rappel
                             </button>
                         )}
+                        {currentUserRole === UserRole.Admin && !tenant.endDate && (
+                            <button
+                                onClick={() => onSendDocuments(tenant.id)}
+                                className={`font-medium ${documentUrls.reglementUrl || documentUrls.mandatUrl ? 'text-blue-600 hover:text-blue-900' : 'text-slate-400 cursor-not-allowed'}`}
+                                title={documentUrls.reglementUrl || documentUrls.mandatUrl ? 'Envoyer règlement intérieur et mandat' : 'Uploadez les documents dans Administrateur d\'abord'}
+                            >
+                                Docs
+                            </button>
+                        )}
+                        {currentUserRole === UserRole.Admin && !tenant.endDate && (
+                            <button
+                                onClick={() => { setQuittanceTenantId(quittanceTenantId === tenant.id ? null : tenant.id); setQuittancePeriod(defaultPeriod); }}
+                                className="text-indigo-600 hover:text-indigo-900 font-medium"
+                                title="Générer une quittance de loyer PDF"
+                            >
+                                Quittance
+                            </button>
+                        )}
+                        {currentUserRole === UserRole.Admin && (
+                            <button
+                                onClick={() => {
+                                    if (window.confirm(`Supprimer définitivement ${tenant.firstName} ${tenant.lastName} de Firebase ?\nCette action est irréversible.`)) {
+                                        onDeleteTenant(tenant.id);
+                                    }
+                                }}
+                                className="text-red-600 hover:text-red-900 font-medium"
+                                title="Supprimer définitivement ce locataire de Firebase"
+                            >
+                                Supprimer
+                            </button>
+                        )}
                       </td>
                     </tr>
+                    {quittanceTenantId === tenant.id && (
+                      <tr className="bg-indigo-50">
+                        <td colSpan={10} className="px-4 py-3">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-sm font-semibold text-indigo-700">Quittance pour {tenant.firstName} {tenant.lastName}</span>
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs text-slate-600">Période :</label>
+                              <input
+                                type="month"
+                                value={quittancePeriod}
+                                onChange={e => setQuittancePeriod(e.target.value)}
+                                className="text-sm border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                              />
+                            </div>
+                            <button
+                              onClick={() => { generateQuittanceLoyer(tenant, quittancePeriod, bailleurNom); setQuittanceTenantId(null); }}
+                              className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                            >
+                              Télécharger le PDF
+                            </button>
+                            <button onClick={() => setQuittanceTenantId(null)} className="text-xs text-slate-500 hover:text-slate-700">Annuler</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   )})}
                 </tbody>
               </table>

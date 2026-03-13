@@ -39,6 +39,7 @@ const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, currentUserR
             <a onClick={() => setActivePage('boxes')} className={navItemClasses('boxes')}>Boxes</a>
             <a onClick={() => setActivePage('tenants')} className={navItemClasses('tenants')}>Locataires</a>
             <a onClick={onOpenVideoManager} className={navItemClasses('videos')}>Visites guidées</a>
+            <a onClick={() => setActivePage('help')} className={navItemClasses('help')} title="Guide d'utilisation">Aide</a>
             {currentUserRole === UserRole.Admin && (
               <>
                 <a onClick={() => setActivePage('calendar')} className={navItemClasses('calendar')}>Historique</a>

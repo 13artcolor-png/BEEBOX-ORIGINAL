@@ -88,6 +88,7 @@ export interface Tenant {
   idType: IdType;
   idImageUrl?: string;
   insuranceInfo: string;
+  insuranceExpiryDate?: string;
   insuranceImageUrl?: string;
   doorCode: string;
   codeLocataire?: string;
@@ -198,6 +199,45 @@ export interface GeranceRecord {
   importedAt: string;
 }
 
+export interface ErreurAgence {
+  id: string;
+  type: string;
+  titre: string;
+  description: string;
+  boxesImpactees: string;
+  ecartMensuel?: number;
+  ecartAnnuel?: number;
+  impactMensuel?: number;
+  impactAnnuel?: number;
+  dateDetectee: string;
+  statut: string;
+  actionRequise: string;
+  // Champs erreur tarif
+  locataire?: string;
+  codeLocataire?: string;
+  prixReel?: number;
+  prixFacture?: number;
+  cause?: string;
+  // Champs dette fantôme
+  locatairesFautif?: string;
+  locatairesVictimes?: string;
+  detteBox1?: number;
+  detteBox23?: number;
+}
+
+export interface RdgRecord {
+  id: string;
+  ref: string;
+  date_rdg: string;    // YYYY-MM-DD
+  annee: string;       // YYYY
+  mois: string;        // YYYY-MM
+  quittance_total: number;
+  regle_total: number;
+  honoraires_gerance: number;
+  honoraires_entree: number;
+  virement: number;
+}
+
 export interface HonorairesRecord {
   id: string;
   factureNum: string;
@@ -213,4 +253,26 @@ export interface HonorairesRecord {
   mandatNum: string;
   fichier: string;
   importedAt: string;
+}
+
+// ─── Interfaces Contrôle CRG Mensuel ─────────────────────────────────────────
+
+export interface CrgLot {
+  boxId: string;
+  locataires: { nom: string; loyer: number; quittance: number; regle: number; solde: number }[];
+}
+
+export interface CrgErreurStatus {
+  erreurId: string;
+  titre: string;
+  statut: 'PERSISTANT' | 'CORRIGE' | 'NOUVEAU';
+  detail: string;
+}
+
+export interface CrgAnalysisResult {
+  date: string;
+  virement: number;
+  lots: CrgLot[];
+  erreursStatus: CrgErreurStatus[];
+  nouvellesAnomalies: string[];
 }

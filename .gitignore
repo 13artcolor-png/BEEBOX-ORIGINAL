@@ -3,5 +3,12 @@ dist/
 .env
 .claude/
 desktop.ini
-Img/desktop.ini
+Img/
 *.local
+# Fichiers sensibles - ne jamais committer
+CREDENTIALS*.md
+*.mjs.bak
+# Données ORPI locales (volumineuses)
+import_data/
+# Documents PDF locaux (uploadés sur Firebase Storage)
+documents/

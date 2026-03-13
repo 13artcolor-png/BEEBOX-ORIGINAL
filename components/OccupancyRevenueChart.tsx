@@ -154,7 +154,7 @@ const OccupancyRevenueChart: React.FC<OccupancyRevenueChartProps> = ({ data }) =
               </text>
               {hasHonoraires && (
                 <text x={tx + 5} y={ty + 64} textAnchor="middle" fontSize="11" fill="#fdba74">
-                  {(tooltip.d.honoraires ?? 0).toFixed(0)} € honoraires
+                  {(tooltip.d.honoraires ?? 0).toFixed(0)} € honoraires cumulés
                 </text>
               )}
             </g>
@@ -174,7 +174,7 @@ const OccupancyRevenueChart: React.FC<OccupancyRevenueChartProps> = ({ data }) =
         {hasHonoraires && (
           <div className="flex items-center gap-2">
             <div className="w-4 h-px bg-orange-500 rounded" style={{ borderTop: '2px dashed #f97316' }} />
-            <span>Honoraires agence (€)</span>
+            <span>Honoraires agence cumulés (€)</span>
           </div>
         )}
       </div>

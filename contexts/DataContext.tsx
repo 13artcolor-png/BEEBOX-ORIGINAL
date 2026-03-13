@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { db, auth, firestoreGet, logActivity } from '../services/firebase';
-import { AdminUser, ActivityLog, GuidedVideo, GeranceRecord, HonorairesRecord, UserRole } from '../types';
+import { AdminUser, ActivityLog, GuidedVideo, GeranceRecord, HonorairesRecord, ErreurAgence, RdgRecord, UserRole } from '../types';
 import { sendEmailNotification } from '../services/notificationService';
 import { useAuth } from './AuthContext';
 
@@ -10,6 +10,8 @@ interface DataContextType {
   guidedVideos: GuidedVideo[];
   geranceRecords: GeranceRecord[];
   honorairesRecords: HonorairesRecord[];
+  erreurAgences: ErreurAgence[];
+  rdgRecords: RdgRecord[];
   dataLoaded: boolean;
   isSaving: boolean;
   updateAdminProfile: (updatedAdmin: AdminUser, userName: string, userRole: UserRole) => Promise<void>;
@@ -38,6 +40,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [guidedVideos, setGuidedVideos] = useState<GuidedVideo[]>([]);
   const [geranceRecords, setGeranceRecords] = useState<GeranceRecord[]>([]);
   const [honorairesRecords, setHonorairesRecords] = useState<HonorairesRecord[]>([]);
+  const [erreurAgences, setErreurAgences] = useState<ErreurAgence[]>([]);
+  const [rdgRecords, setRdgRecords] = useState<RdgRecord[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -49,6 +53,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       setGuidedVideos([]);
       setGeranceRecords([]);
       setHonorairesRecords([]);
+      setErreurAgences([]);
+      setRdgRecords([]);
       setDataLoaded(false);
       return;
     }
@@ -58,18 +64,22 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
     const fetchAll = async () => {
       try {
-        const [adminData, logsData, videosData, geranceData, honorairesData] = await Promise.all([
+        const [adminData, logsData, videosData, geranceData, honorairesData, erreurData, rdgData] = await Promise.all([
           firestoreGet('admin'),
-          firestoreGet('activityLogs', 200),
+          firestoreGet('activityLogs'),
           firestoreGet('guidedVideos'),
-          firestoreGet('geranceRecords', 2000),
-          firestoreGet('honorairesRecords', 2000),
+          firestoreGet('geranceRecords'),
+          firestoreGet('honorairesRecords'),
+          firestoreGet('erreurAgence'),
+          firestoreGet('rdgRecords'),
         ]);
         if (cancelled) return;
 
         setAdminUser(adminData.length > 0 ? adminData[0] as AdminUser : null);
         setGeranceRecords(geranceData as GeranceRecord[]);
         setHonorairesRecords(honorairesData as HonorairesRecord[]);
+        setErreurAgences(erreurData as ErreurAgence[]);
+        setRdgRecords(rdgData as RdgRecord[]);
 
         // Tri côté client par timestamp desc
         logsData.sort((a, b) => {
@@ -104,17 +114,14 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [isAuthenticated]);
 
   const updateAdminProfile = async (updatedAdmin: AdminUser, userName: string, userRole: UserRole) => {
-    if (!adminUser || !adminUser.id) {
-      alert('Action non autorisée ou utilisateur non connecté.');
-      return;
-    }
-
     setIsSaving(true);
     try {
       const { id, password, ...adminData } = updatedAdmin;
 
-      // Update Firestore profile data
-      await db.collection('admin').doc(adminUser.id).update(adminData);
+      // Recherche du doc admin par requête (évite le conflit entre id stocké et ID Firestore réel)
+      const adminSnap = await db.collection('admin').limit(1).get();
+      if (adminSnap.empty) throw new Error('Document admin introuvable dans Firestore.');
+      await adminSnap.docs[0].ref.update(adminData);
       await logActivity(userName, userRole, 'Mise à jour du profil administrateur.');
 
       // Update password in Firebase Auth if provided
@@ -188,6 +195,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     guidedVideos,
     geranceRecords,
     honorairesRecords,
+    erreurAgences,
+    rdgRecords,
     dataLoaded,
     isSaving,
     updateAdminProfile,

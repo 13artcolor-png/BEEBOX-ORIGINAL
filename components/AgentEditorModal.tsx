@@ -1,7 +1,7 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Agent, Agency } from '../types';
+import { storage } from '../services/firebase';
 
 interface AgentEditorModalProps {
   isOpen: boolean;
@@ -24,8 +24,10 @@ const AgentEditorModal: React.FC<AgentEditorModalProps> = ({ isOpen, onClose, on
     password: '',
   });
   const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
+  const [photoFile, setPhotoFile] = useState<File | null>(null); // fichier brut pour upload Firebase Storage
   const [doorCodeError, setDoorCodeError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
 
   useEffect(() => {
@@ -57,7 +59,8 @@ const AgentEditorModal: React.FC<AgentEditorModalProps> = ({ isOpen, onClose, on
       setPhotoPreview(undefined);
     }
     setDoorCodeError('');
-  }, [agentToEdit, isOpen, agencies]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -76,13 +79,15 @@ const AgentEditorModal: React.FC<AgentEditorModalProps> = ({ isOpen, onClose, on
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const fileUrl = URL.createObjectURL(e.target.files[0]);
-      setAgentData(p => ({ ...p, photoUrl: fileUrl }));
-      setPhotoPreview(fileUrl);
+      const file = e.target.files[0];
+      // On garde le fichier pour l'upload Firebase Storage au moment de la sauvegarde
+      setPhotoFile(file);
+      // Blob URL uniquement pour la prévisualisation locale (jamais sauvegardée)
+      setPhotoPreview(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if(agentData.doorCode && agentData.doorCode.length !== 8){
         setDoorCodeError('Le code doit contenir exactement 8 chiffres.');
@@ -93,16 +98,37 @@ const AgentEditorModal: React.FC<AgentEditorModalProps> = ({ isOpen, onClose, on
         alert("Veuillez définir un mot de passe initial d'au moins 6 caractères pour le nouvel agent.");
         return;
     }
-    
+
     if (agentToEdit && agentData.password && agentData.password.length < 6) {
         alert("Le nouveau mot de passe doit contenir au moins 6 caractères.");
         return;
     }
 
+    let finalPhotoUrl = agentData.photoUrl;
+
+    // Upload de la photo vers Firebase Storage si un nouveau fichier a été sélectionné
+    if (photoFile) {
+      try {
+        setUploading(true);
+        const agentId = agentToEdit?.id || `new_${Date.now()}`;
+        const photoRef = storage.ref(`agents/${agentId}/photo_${Date.now()}_${photoFile.name}`);
+        await photoRef.put(photoFile);
+        finalPhotoUrl = await photoRef.getDownloadURL();
+      } catch (err) {
+        console.error("Erreur upload photo agent :", err);
+        alert("Erreur lors de l'upload de la photo. Veuillez réessayer.");
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    const dataToSave = { ...agentData, photoUrl: finalPhotoUrl };
     if (agentToEdit) {
-      onSave({ ...agentToEdit, ...agentData });
+      onSave({ ...agentToEdit, ...dataToSave });
     } else {
-      onSave(agentData);
+      onSave(dataToSave);
     }
   };
 
@@ -114,7 +140,7 @@ const AgentEditorModal: React.FC<AgentEditorModalProps> = ({ isOpen, onClose, on
             {agentToEdit ? "Modifier l'Agent" : "Ajouter un Nouvel Agent"}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto p-6 space-y-4">
+        <form id="agent-editor-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField label="Nom complet" name="name" value={agentData.name} onChange={handleChange} required />
             <InputField label="Code Personnel" name="personalCode" value={agentData.personalCode} onChange={handleChange} required />
@@ -181,8 +207,10 @@ const AgentEditorModal: React.FC<AgentEditorModalProps> = ({ isOpen, onClose, on
           </div>
         </form>
         <div className="p-4 border-t flex justify-end space-x-2 bg-gray-50 rounded-b-lg">
-          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Annuler</button>
-          <button type="submit" onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Enregistrer</button>
+          <button type="button" onClick={onClose} disabled={uploading} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50">Annuler</button>
+          <button type="submit" form="agent-editor-form" disabled={uploading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+            {uploading ? 'Upload photo...' : 'Enregistrer'}
+          </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Box, Tenant, BoxStatus, UserRole, Agent } from '../types';
+import { Box, Tenant, BoxStatus, UserRole, Agent, PaymentStatus } from '../types';
 
 const WarningIcon: React.FC<{ message: string }> = ({ message }) => (
   <div className="relative group">
@@ -64,9 +64,11 @@ const BoxTile: React.FC<BoxTileProps> = ({ box, tenant, agents, onClick, onIniti
     }
   }
 
+  const isLate = isOccupied && tenant && (tenant.paymentStatus === PaymentStatus.Overdue || tenant.unpaidRent > 0);
+
   return (
-    <div 
-      className={`rounded-xl border border-slate-200 ${isOccupied ? 'bg-red-50' : 'bg-white'} shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col justify-between`}
+    <div
+      className={`rounded-xl border-2 ${isLate ? 'border-red-500 shadow-red-200' : 'border-slate-200'} ${isOccupied ? 'bg-red-50' : 'bg-white'} shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col justify-between`}
     >
       <div 
         className="p-4 cursor-pointer"
@@ -77,12 +79,17 @@ const BoxTile: React.FC<BoxTileProps> = ({ box, tenant, agents, onClick, onIniti
       >
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-bold text-slate-800">Box #{box.id}</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {box.workAlert && <WorkIcon message={box.workToDo || 'Travaux à prévoir'} />}
-            {tenantAlerts.map(alert => <WarningIcon key={alert.key} message={alert.message} />)}
+            {tenantAlerts.filter(a => a.key !== 'rent').map(alert => <WarningIcon key={alert.key} message={alert.message} />)}
             <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${isOccupied ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
               {isOccupied ? 'Occupé' : 'Libre'}
             </span>
+            {isLate && (
+              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-red-600 text-white animate-pulse">
+                RETARD {tenant!.unpaidRent > 0 ? `${tenant!.unpaidRent.toFixed(0)}€` : ''}
+              </span>
+            )}
           </div>
         </div>
         <div className="text-sm text-slate-500 space-y-1.5">

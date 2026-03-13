@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Seuls les utilisateurs authentifiés avec email peuvent accéder au stockage
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    // Documents légaux (règlement intérieur, mandat) — lecture/écriture pour admin authentifié
+    match /documents/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Justificatifs locataires (pièces d'identité, assurances)
+    match /tenants/{tenantId}/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Photos de profil des agents ORPI
+    match /agents/{agentId}/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Vidéos de visites guidées
+    match /videos/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Interdire tout le reste
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

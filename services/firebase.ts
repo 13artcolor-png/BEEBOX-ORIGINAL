@@ -92,25 +92,33 @@ function parseFirestoreDoc(doc: any): any {
   return data;
 }
 
-export const firestoreGet = async (collection: string, pageSize = 500): Promise<any[]> => {
+export const firestoreGet = async (collection: string): Promise<any[]> => {
   const user = auth.currentUser;
   if (!user) {
     console.error('[REST] auth.currentUser est null !');
     throw new Error('Not authenticated');
   }
-  const token = await user.getIdToken();
-  const url = `${FIRESTORE_REST_BASE}/${collection}?pageSize=${pageSize}`;
   console.log('[REST] GET', collection, '— uid:', user.uid);
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  console.log('[REST]', collection, '— HTTP', res.status);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    console.error('[REST] Erreur', collection, ':', err.error?.message, err.error?.status);
-    throw Object.assign(new Error(err.error?.message || `HTTP ${res.status}`), { code: 'permission-denied' });
-  }
-  const data = await res.json();
-  console.log('[REST] OK', collection, '—', data.documents?.length ?? 0, 'docs');
-  return (data.documents || []).map(parseFirestoreDoc);
+  const allDocs: any[] = [];
+  let pageToken: string | undefined;
+  do {
+    const token = await user.getIdToken();
+    let url = `${FIRESTORE_REST_BASE}/${collection}?pageSize=300`;
+    if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    console.log('[REST]', collection, '— HTTP', res.status);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[REST] Erreur', collection, ':', err.error?.message, err.error?.status);
+      throw Object.assign(new Error(err.error?.message || `HTTP ${res.status}`), { code: 'permission-denied' });
+    }
+    const data = await res.json();
+    const docs = (data.documents || []).map(parseFirestoreDoc);
+    allDocs.push(...docs);
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  console.log('[REST] OK', collection, '—', allDocs.length, 'docs');
+  return allDocs;
 };
 
 export default firebase;
